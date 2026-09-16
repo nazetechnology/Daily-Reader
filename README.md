@@ -4,6 +4,8 @@ A lightweight, single-page reading desk for the daily.dev public feed.
 
 Created by [Naze Technology](https://naze.in).
 
+> **Live testing and privacy:** GitHub Pages is provided for live testing and quick demos. For the best privacy and the least hassle, use the reader locally. Your token and reading preferences stay in your browser, and local use does not require publishing the reader as a public site.
+
 ## Features
 
 - Read daily.dev posts in a focused feed.
@@ -19,7 +21,9 @@ Created by [Naze Technology](https://naze.in).
 - A daily.dev personal access token.
 - Node.js only if the proxy is needed.
 
-## Quick Start
+## Recommended: Run Locally
+
+This is the privacy-first way to use The Daily Reader. Run it locally for a simple experience without hosting or deployment concerns.
 
 1. Download or clone this repository.
 2. Start a local server from the project directory:
@@ -32,7 +36,22 @@ Created by [Naze Technology](https://naze.in).
 4. Paste your daily.dev personal access token into the startup screen.
 5. Select **OPEN THE WIRE**.
 
-The reader tries the daily.dev API directly first. If the browser blocks the request because of CORS, start the optional proxy below and use the default proxy URL in **SETUP**.
+The reader tries the daily.dev API directly first. If the browser blocks the request because of CORS, start the optional local proxy below and use the default proxy URL in **SETUP**.
+
+## GitHub Pages
+
+GitHub Pages is intended for live testing, previews, and quick demos.
+For regular personal use, run the project locally using the instructions above.
+
+To publish a live test version:
+
+1. Push the repository to GitHub.
+2. Open the repository's **Settings** tab.
+3. Go to **Pages** under **Code and automation**.
+4. Select **Deploy from a branch**, choose the branch containing `index.html`, and choose the `/ (root)` folder.
+5. Select **Save**, then open the published Pages URL after GitHub finishes deploying.
+
+GitHub Pages runs the static `index.html` file but cannot run Node.js. On a `github.io` URL, the reader defaults to the direct daily.dev API route and does not assume a local proxy. If direct API requests are blocked by CORS, use a separately hosted CORS proxy and enter its URL in **SETUP**, or return to local use with the included `daily-proxy.js`.
 
 ## Optional CORS Proxy
 
@@ -86,7 +105,7 @@ If you change the port, update the proxy URL in the reader's **SETUP** panel.
 
 Contributors are welcome. To contribute:
 
-1. Fork the repository. 
+1. Fork the repository.
 2. Create a focused feature or fix branch.
 3. Test the reader in a browser and run `node --check .\daily-proxy.js`.
 4. Open a pull request with a clear description of the change.
