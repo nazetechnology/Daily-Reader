@@ -1,19 +1,3 @@
-// daily-proxy.js
-// daily.dev Public API compatibility proxy
-// Zero dependencies
-//
-// Run:
-//   node daily-proxy.js
-//
-// Or with API token:
-//   DAILY_KEY=xxx node daily-proxy.js
-//
-// Windows CMD:
-//   set DAILY_KEY=xxx && node daily-proxy.js
-//
-// Windows PowerShell:
-//   $env:DAILY_KEY="xxx"; node daily-proxy.js
-
 'use strict';
 
 const http = require('http');
