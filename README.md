@@ -1,59 +1,60 @@
 # The Daily Reader
 
-A lightweight, single-page reading desk for the daily.dev public feed.
+A lightweight, privacy-first reading desk for the daily.dev public feed.
 
 Created by [Naze Technology](https://naze.in).
 
-> **Live testing and privacy:** GitHub Pages is provided for live testing and quick demos. For the best privacy and the least hassle, use the reader locally. Your token and reading preferences stay in your browser, and local use does not require publishing the reader as a public site.
+## Try It Live
+
+The live GitHub Pages site is available for testing and quick demos:
+
+[Open The Daily Reader](https://nazetechnology.github.io/Daily-Reader/)
+
+For regular use, download the latest **release version** from GitHub. The release version is the recommended, stable option for users who want to use the app without working from source code.
 
 ## Features
 
 - Read daily.dev posts in a focused feed.
-- Filter posts by all, unread, saved, tag, or text search.
+- Filter posts by unread, saved, tag, or text search.
 - Save posts for later and mark posts as read.
-- Open posts, copy links, and export the visible list as Markdown.
-- Use the daily.dev API directly or fall back to the included CORS proxy.
-- No build step and no frontend dependencies.
+- Open articles, copy links, and export the visible list as Markdown.
+- Use the daily.dev API directly or through the optional local proxy.
+- No build step and no frontend package installation required.
 
 ## Requirements
 
 - A modern web browser.
 - A daily.dev personal access token.
-- Node.js only if the proxy is needed.
+- Node.js only if the optional local proxy is needed.
 
-## Recommended: Run Locally
+## Recommended: Use the Release Version
 
-This is the privacy-first way to use The Daily Reader. Run it locally for a simple experience without hosting or deployment concerns.
+1. Open the [Releases](https://github.com/nazetechnology/Daily-Reader/releases) page.
+2. Download the latest release version.
+3. Extract the downloaded files.
+4. Open the included `index.html`, or serve the folder locally using the instructions below.
+5. Enter your daily.dev personal access token.
+6. Select **OPEN THE WIRE**.
 
-1. Download or clone this repository.
-2. Start a local server from the project directory:
+Using the release version is recommended because it represents the stable version intended for everyday use. Use the live GitHub Pages site for testing and previews, and use the source code when you want to contribute or customize the project.
 
-   ```powershell
-   py -m http.server 8000
-   ```
+## Privacy-First Local Use
 
-3. Open [http://localhost:8000](http://localhost:8000).
-4. Paste your daily.dev personal access token into the startup screen.
-5. Select **OPEN THE WIRE**.
+For the most private and hassle-free experience, run The Daily Reader locally. Your token, saved posts, read status, and preferences are stored in your browser's local storage. The project does not need a hosted database or a build system.
 
-The reader tries the daily.dev API directly first. If the browser blocks the request because of CORS, start the optional local proxy below and use the default proxy URL in **SETUP**.
+From the project directory, start a local server:
 
-## GitHub Pages
+```powershell
+py -m http.server 8000
+```
 
-GitHub Pages is intended for live testing, previews, and quick demos.
-For regular personal use, run the project locally using the instructions above.
+Then open [http://localhost:8000](http://localhost:8000) in your browser.
 
-To publish a live test version:
+The reader tries the daily.dev API directly. If the browser blocks the request because of CORS, use the optional proxy below and keep the proxy URL set to `http://localhost:8010` in **SETUP**.
 
-1. Push the repository to GitHub.
-2. Open the repository's **Settings** tab.
-3. Go to **Pages** under **Code and automation**.
-4. Select **Deploy from a branch**, choose the branch containing `index.html`, and choose the `/ (root)` folder.
-5. Select **Save**, then open the published Pages URL after GitHub finishes deploying.
+## Optional Local Proxy
 
-GitHub Pages runs the static `index.html` file but cannot run Node.js. On a `github.io` URL, the reader defaults to the direct daily.dev API route and does not assume a local proxy. If direct API requests are blocked by CORS, use a separately hosted CORS proxy and enter its URL in **SETUP**, or return to local use with the included `daily-proxy.js`.
-
-## Optional CORS Proxy
+GitHub Pages cannot run Node.js. The proxy is intended for local use or a separately hosted server.
 
 Open a second terminal in the project directory and run:
 
@@ -61,9 +62,9 @@ Open a second terminal in the project directory and run:
 node .\daily-proxy.js
 ```
 
-The proxy listens on `http://localhost:8010` by default. Keep the reader's proxy URL set to that address, then choose **RUN TEST** or **SAVE & LOAD FEED** in **SETUP**.
+The proxy listens on `http://localhost:8010` by default. Select **RUN TEST** or **SAVE & LOAD FEED** in **SETUP** after starting it.
 
-To keep the API token on the server instead of entering it in the browser, configure `DAILY_KEY` before starting the proxy.
+To keep the API token in the proxy process instead of the browser, configure `DAILY_KEY` before starting the proxy.
 
 ### Windows PowerShell
 
@@ -79,38 +80,38 @@ set DAILY_KEY=your-daily-dev-token
 node daily-proxy.js
 ```
 
-You can also change the port with the `PORT` environment variable:
-
-```powershell
-$env:PORT="8011"
-node .\daily-proxy.js
-```
-
-If you change the port, update the proxy URL in the reader's **SETUP** panel.
-
 ## Privacy and Security
 
+- Never commit your daily.dev token or add it to a public source file.
 - The reader stores your token and reading preferences in your browser's local storage.
-- Do not commit API tokens or place them in public source files.
-- Use `DAILY_KEY` when you want the local proxy to hold the token instead.
-- The proxy does not store tokens or responses.
+- The live GitHub Pages site is convenient for testing, but local use is recommended for regular private use.
+- The optional proxy does not store tokens or API responses.
+- Your token is sent to daily.dev when the reader requests your feed.
+
+## Community Support
+
+Community support is welcome. For questions, bug reports, and feature requests, open an [Issue](https://github.com/nazetechnology/Daily-Reader/issues). Please include your browser, operating system, setup method, and the relevant error message. Never include your API token in an issue.
+
+If The Daily Reader is useful to you, please [star the repository](https://github.com/nazetechnology/Daily-Reader). A star helps other users discover the project and supports future improvements.
+
+## Contributing
+
+Contributors are welcome. You can help by reporting bugs, improving documentation, suggesting features, or submitting code.
+
+1. Fork the repository.
+2. Create a focused feature or fix branch.
+3. Make your changes without adding secrets.
+4. Test the reader in a browser.
+5. Run `node --check .\daily-proxy.js` when changing the proxy.
+6. Open a pull request with a clear description and testing notes.
+
+Please keep contributions focused and preserve the project's simple, dependency-free setup where possible.
 
 ## Project Files
 
 - `index.html` - the complete frontend and interface.
-- `daily-proxy.js` - optional zero-dependency Node.js proxy.
-- `LICENSE` - MIT license.
-
-## Contributing
-
-Contributors are welcome. To contribute:
-
-1. Fork the repository.
-2. Create a focused feature or fix branch.
-3. Test the reader in a browser and run `node --check .\daily-proxy.js`.
-4. Open a pull request with a clear description of the change.
-
-Please keep changes focused, avoid committing secrets, and preserve the dependency-free setup where possible.
+- `daily-proxy.js` - the optional zero-dependency Node.js proxy.
+- `LICENSE` - the MIT license.
 
 ## License
 
