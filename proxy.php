@@ -1,7 +1,4 @@
 <?php
-// Hostinger-compatible daily.dev API proxy for The Daily Reader.
-// Keep this file on the same HTTPS domain as index.html.
-
 declare(strict_types=1);
 
 const DAILY_HOST = 'api.daily.dev';
