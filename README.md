@@ -25,6 +25,7 @@ For regular use, download the latest **release version** from GitHub. The releas
 
 - A modern web browser.
 - A daily.dev personal access token.
+- PHP with cURL enabled when hosting the proxy on a PHP server.
 - Node.js only if the optional local proxy is needed.
 
 ## Recommended: Use the Release Version
@@ -52,9 +53,23 @@ Then open [http://localhost:8000](http://localhost:8000) in your browser.
 
 The reader tries the daily.dev API directly. If the browser blocks the request because of CORS, use the optional proxy below and keep the proxy URL set to `http://localhost:8010` in **SETUP**.
 
+## Hostinger PHP Hosting
+
+To host the complete project on Hostinger without GitHub Pages, upload these files to `public_html`:
+
+```text
+index.html
+proxy.php
+.htaccess
+```
+
+Open your HTTPS domain, then use `/proxy.php` as the proxy URL in **SETUP** and select the `proxy` route. The frontend automatically uses `/proxy.php` when hosted on a non-local domain. Hostinger must have PHP and cURL enabled.
+
+The PHP proxy runs on the same domain as the frontend, forwards requests to daily.dev, handles browser preflight requests, and adds the required CORS headers. The included `.htaccess` file routes proxy paths correctly, redirects HTTP to HTTPS, and prevents the Node proxy source from being served publicly.
+
 ## Optional Local Proxy
 
-GitHub Pages cannot run Node.js. The proxy is intended for local use or a separately hosted server.
+GitHub Pages and standard PHP hosting cannot run Node.js. The Node proxy is intended for local development only; use `proxy.php` on Hostinger.
 
 Open a second terminal in the project directory and run:
 
@@ -110,6 +125,8 @@ Please keep contributions focused and preserve the project's simple, dependency-
 ## Project Files
 
 - `index.html` - the complete frontend and interface.
+- `proxy.php` - the Hostinger-compatible PHP API proxy.
+- `.htaccess` - HTTPS, proxy routing, and basic web-server rules.
 - `daily-proxy.js` - the optional zero-dependency Node.js proxy.
 - `LICENSE` - the MIT license.
 

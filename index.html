@@ -447,8 +447,9 @@ function relTime(iso){
 /* ============ config / state ============ */
 const K = {key:'ddr_key', proxy:'ddr_proxy', route:'ddr_route', psize:'ddr_psize', base:'ddr_base', read:'ddr_read', saved:'ddr_saved'};
 const hostedOnGitHubPages = /(^|\.)github\.io$/i.test(location.hostname);
-const defaultProxy = hostedOnGitHubPages ? '' : 'http://localhost:8010';
-const defaultRoute = hostedOnGitHubPages ? 'direct' : 'auto';
+const localDevelopment = /^(localhost|127\.0\.0\.1)$/i.test(location.hostname);
+const defaultProxy = hostedOnGitHubPages ? '' : localDevelopment ? 'http://localhost:8010' : '/proxy.php';
+const defaultRoute = hostedOnGitHubPages || localDevelopment ? (localDevelopment ? 'auto' : 'direct') : 'proxy';
 const state = {
   key:   localStorage.getItem(K.key) || '',
   proxy: localStorage.getItem(K.proxy) ?? defaultProxy,

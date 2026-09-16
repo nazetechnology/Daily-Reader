@@ -1,0 +1,17 @@
+Options -Indexes
+DirectoryIndex index.html
+AcceptPathInfo On
+
+RewriteEngine On
+
+# Keep the production site on HTTPS.
+RewriteCond %{HTTPS} !=on
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Let the PHP proxy receive paths such as /proxy.php/feeds/foryou.
+RewriteRule ^proxy\.php(?:/.*)?$ proxy.php [L,QSA]
+
+# Never expose the local Node proxy source on a web server.
+<Files "daily-proxy.js">
+    Require all denied
+</Files>
