@@ -55,7 +55,9 @@ The live website is convenient, but privacy depends on your browser, device, hos
 
 Local use is the privacy-first option and does not require the public website.
 
-From the project directory, run:
+### Option 1: Static frontend server
+
+Use this option to serve the frontend files for testing:
 
 ```powershell
 py -m http.server 8000
@@ -63,13 +65,33 @@ py -m http.server 8000
 
 Then open [http://localhost:8000](http://localhost:8000).
 
-If the browser blocks direct API requests because of CORS, start the optional local Node.js proxy in a second terminal:
+### Option 2: PHP server and proxy
+
+Use this option when PHP and cURL are available. From the project directory, run:
+
+```powershell
+php -S localhost:8000
+```
+
+Open [http://localhost:8000](http://localhost:8000), then set the proxy URL to `/proxy.php` and the route to `proxy` in **SETUP**.
+
+### Option 3: Node.js proxy
+
+Use this option when Node.js is available. Start the frontend server in one terminal:
+
+```powershell
+py -m http.server 8000
+```
+
+Then start the Node.js proxy in a second terminal:
 
 ```powershell
 node .\daily-proxy.js
 ```
 
-The local Node.js proxy listens on `http://localhost:8010` by default. Configure that address in **SETUP** if required. You can also use the PHP proxy instead if your server supports PHP and cURL.
+The Node.js proxy listens on `http://localhost:8010` by default. Keep that address in **SETUP** and use the `auto` or `proxy` route.
+
+Choose the PHP proxy or Node.js proxy when direct browser requests are blocked by CORS. You do not need to run both proxy options.
 
 ## Shared Hosting or VPS Deployment
 
