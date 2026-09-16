@@ -8,7 +8,7 @@ Use the production website here:
 
 [Open The Daily Reader](https://daily.naze.in/)
 
-The site is hosted on Hostinger and uses the included PHP proxy to communicate with the daily.dev API.
+The site uses the included PHP proxy to communicate with the daily.dev API.
 
 ## Features
 
@@ -64,9 +64,9 @@ node .\daily-proxy.js
 
 The local proxy listens on `http://localhost:8010` by default. Configure that address in **SETUP** if required.
 
-## Hostinger Deployment
+## Shared Hosting or VPS Deployment
 
-The production site uses these files inside the Hostinger `public_html` directory:
+The project can run on any PHP-compatible shared hosting account or VPS. Upload these files to your web root, such as `public_html`:
 
 ```text
 index.html
@@ -74,7 +74,7 @@ proxy.php
 .htaccess
 ```
 
-Hostinger must have PHP and cURL enabled. The PHP proxy forwards feed requests to daily.dev, handles browser preflight requests, and keeps the frontend and proxy on the same HTTPS domain.
+Your server must have PHP, cURL, Apache or an equivalent web server, and HTTPS enabled. The PHP proxy forwards feed requests to daily.dev, handles browser preflight requests, and keeps the frontend and proxy on the same HTTPS domain.
 
 The Node.js file is for local development. Standard PHP hosting does not run `daily-proxy.js` as a server.
 
@@ -100,7 +100,7 @@ Please keep contributions focused and preserve the simple, dependency-free setup
 ## Project Files
 
 - `index.html` - the frontend application.
-- `proxy.php` - the Hostinger-compatible PHP API proxy.
+- `proxy.php` - the PHP API proxy for shared hosting or VPS deployment.
 - `.htaccess` - HTTPS, proxy routing, and basic web-server rules.
 - `daily-proxy.js` - the optional local Node.js proxy.
 - `LICENSE` - the MIT license.
