@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>The Daily Reader — internal desk for daily.dev</title>
+<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" fill="%231C1A15"/><circle cx="16" cy="16" r="7" fill="%232FA36B"/></svg>'>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=Spline+Sans+Mono:wght@300..700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  :root{
+    --paper:#F4EFE4; --paper-2:#ECE5D3;
+    --ink:#1C1A15; --ink-60:rgba(28,26,21,.62); --ink-40:rgba(28,26,21,.4);
+    --line:rgba(28,26,21,.18); --line-strong:rgba(28,26,21,.5);
+    --accent:#1D6F4C; --accent-ink:#145238; --mark:#2FA36B; --danger:#B4452D;
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  html,body{margin:0}
+  body{background:var(--paper);color:var(--ink);font-family:'Instrument Sans',sans-serif;font-size:14.5px;-webkit-font-smoothing:antialiased}
+  body::after{content:"";position:fixed;inset:0;z-index:5;pointer-events:none;opacity:.5;mix-blend-mode:multiply;
+    background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.04 0"/></filter><rect width="180" height="180" filter="url(%23n)"/></svg>')}
+  ::selection{background:var(--mark);color:var(--paper)}
+  button{font-family:inherit}
+  .mono{font-family:'Spline Sans Mono',ui-monospace,monospace;font-size:12px;letter-spacing:.05em}
+  a{color:var(--accent-ink)}
+  button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  /* utility bar */
+  .util{border-bottom:1px solid var(--line)}
+  .util-in{max-width:1080px;margin:0 auto;padding:13px 28px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--ink-40);display:inline-block;margin-right:9px;vertical-align:1px}
+  .dot.busy{background:var(--mark);animation:pulse 1s ease-in-out infinite}
+  .dot.ok{background:var(--accent)} .dot.err{background:var(--danger)}
+  @keyframes pulse{50%{opacity:.25}}
+  #wire{color:var(--ink-60);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase}
+  .textbtn{background:none;border:none;border-bottom:1px solid transparent;padding:2px 0;cursor:pointer;
+    font-family:'Spline Sans Mono',monospace;font-size:11px;letter-spacing:.16em;color:var(--ink)}
+  .textbtn:hover{border-bottom-color:var(--ink)}
+  .util-right{display:flex;align-items:center;gap:14px}
+  .util-right .sep{color:var(--ink-40)}
+
+  /* masthead */
+  .mast{text-align:center;padding:30px 20px 0}
+  .mast-meta{font-size:11px;letter-spacing:.22em;color:var(--ink-60)}
+  .mast-title{font-family:'Fraunces',serif;font-weight:560;font-size:clamp(46px,7.5vw,92px);line-height:.95;letter-spacing:-.015em;margin:16px 0 14px}
+  .mast-title em{font-style:italic;font-weight:480}
+  .mast-sub{font-size:10.5px;letter-spacing:.26em;color:var(--ink-40)}
+  .rule-double{max-width:1080px;margin:26px auto 0;border-top:3px solid var(--ink)}
+  .rule-double::after{content:"";display:block;border-top:1px solid var(--ink);margin-top:3px}
+
+  /* toolbar */
+  .bar{position:sticky;top:0;z-index:40;background:var(--paper);border-bottom:1px solid var(--line)}
+  .bar-in{max-width:1080px;margin:0 auto;padding:11px 28px;display:flex;justify-content:space-between;align-items:center;gap:14px}
+  .tabs{display:flex;gap:24px}
+  .tabs button{background:none;border:none;border-bottom:2px solid transparent;padding:6px 1px;cursor:pointer;
+    font-family:'Spline Sans Mono',monospace;font-size:12px;letter-spacing:.14em;color:var(--ink-60)}
+  .tabs button b{font-weight:600;margin-left:4px;color:var(--ink-40)}
+  .tabs button.active{color:var(--ink);border-color:var(--accent)}
+  .tabs button.active b{color:var(--ink)}
+  .bar-right{display:flex;align-items:center;gap:10px}
+  .search,.tagwrap{display:flex;align-items:center;gap:8px;border:1px solid var(--line);padding:7px 10px;transition:border-color .15s}
+  .search:focus-within,.tagwrap:focus-within{border-color:var(--ink)}
+  .search svg{width:14px;height:14px;color:var(--ink-40);flex:none}
+  .search input{border:none;background:none;outline:none;font:12px 'Spline Sans Mono',monospace;width:170px;color:var(--ink)}
+  .tagwrap span{color:var(--accent-ink);font-family:'Spline Sans Mono',monospace;font-size:12px}
+  .tagwrap input{border:none;background:none;outline:none;font:12px 'Spline Sans Mono',monospace;width:80px;color:var(--ink)}
+  .search input::placeholder,.tagwrap input::placeholder{color:var(--ink-40)}
+  .iconbtn{width:31px;height:31px;display:grid;place-items:center;border:1px solid var(--line);background:none;cursor:pointer;color:var(--ink);transition:border-color .15s}
+  .iconbtn:hover{border-color:var(--ink)}
+  .iconbtn svg{width:15px;height:15px}
+  #btnRefresh.spin svg{animation:rot 1s linear infinite}
+  @keyframes rot{to{transform:rotate(360deg)}}
+
+  /* feed */
+  .list{max-width:1080px;margin:0 auto;padding:6px 28px 0}
+  .row{display:grid;grid-template-columns:64px 1fr auto;gap:0 18px;align-items:start;padding:20px 10px 18px 8px;
+    border-bottom:1px solid var(--line);cursor:pointer;transition:background .18s}
+  .row:hover{background:rgba(28,26,21,.045)}
+  .row.selected{background:rgba(47,163,107,.1);box-shadow:inset 3px 0 0 var(--accent)}
+  .num{font-size:12px;color:var(--ink-40);padding-top:8px}
+  .row.unread .num{color:var(--accent-ink)}
+  .row.unread .num::before{content:"";display:inline-block;width:7px;height:7px;background:var(--mark);margin-right:9px}
+  .t-title{font-family:'Fraunces',serif;font-weight:520;font-size:clamp(20px,2.5vw,27px);line-height:1.16;margin:2px 0 8px}
+  .row:not(.unread) .t-title{color:var(--ink-60)}
+  .row:hover .t-title{text-decoration:underline;text-decoration-color:var(--accent);text-decoration-thickness:2px;text-underline-offset:5px}
+  .t-meta{font-size:11px;letter-spacing:.08em;color:var(--ink-60);text-transform:uppercase}
+  .t-meta .msep{color:var(--ink-40);padding:0 5px}
+  .tag{color:var(--accent-ink);margin-right:8px}
+  .acts{display:flex;gap:6px;padding-top:6px;opacity:0;transition:opacity .15s}
+  .row:hover .acts,.row.selected .acts{opacity:1}
+  .ibtn{width:27px;height:27px;display:grid;place-items:center;border:1px solid transparent;background:none;cursor:pointer;color:var(--ink)}
+  .ibtn:hover{border-color:var(--line-strong)}
+  .ibtn svg{width:15px;height:15px}
+  .ibtn.on{color:var(--accent)} .ibtn.on svg{fill:var(--accent);stroke:var(--accent)}
+  .first .row{animation:rise .5s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--i,0)*26ms)}
+  @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  .empty{text-align:center;color:var(--ink-40);padding:80px 20px;letter-spacing:.16em;font-size:12px;line-height:2.1}
+  .empty b{color:var(--ink)}
+  .linkbtn{background:none;border:none;padding:0;cursor:pointer;color:var(--accent-ink);text-decoration:underline;font:inherit;letter-spacing:inherit}
+
+  .more{text-align:center;padding:38px 20px 6px}
+  .loadmore{background:none;border:1px solid var(--ink);color:var(--ink);padding:13px 30px;cursor:pointer;font-size:11px;letter-spacing:.22em;transition:.18s}
+  .loadmore:hover:not(:disabled){background:var(--ink);color:var(--paper)}
+  .loadmore:disabled{opacity:.5;cursor:default}
+  .end{margin-top:6px;color:var(--ink-40);letter-spacing:.3em;font-size:10.5px}
+  .foot{text-align:center;padding:36px 20px 46px;color:var(--ink-40);font-size:10px;letter-spacing:.22em}
+  .foot-brand{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center}
+  .foot-brand a{display:inline-flex;align-items:center;min-height:22px}
+
+  /* hover peek */
+  #peek{position:fixed;left:0;top:0;z-index:60;width:266px;height:190px;pointer-events:none;background:var(--paper-2);
+    border:1px solid var(--ink);box-shadow:10px 12px 0 rgba(28,26,21,.15);opacity:0;transition:opacity .18s;overflow:hidden}
+  #peek.on{opacity:1}
+  #peek img{width:100%;height:100%;object-fit:cover;display:block}
+  #peek figcaption{position:absolute;left:0;right:0;bottom:0;background:var(--ink);color:var(--paper);
+    font:600 9.5px/1 'Spline Sans Mono',monospace;letter-spacing:.16em;text-transform:uppercase;padding:6px 8px;text-align:center}
+
+  /* gate */
+  .gate{position:fixed;inset:0;z-index:80;background:var(--paper);display:grid;place-items:center;padding:24px;text-align:center}
+  .gate-in{max-width:660px}
+  .gate-brand{margin-top:30px;color:var(--ink-40)}
+  .gate-over{color:var(--accent-ink);letter-spacing:.32em;font-size:10.5px}
+  .gate-title{font-family:'Fraunces',serif;font-weight:560;font-size:clamp(42px,7vw,74px);letter-spacing:-.015em;margin:16px 0 14px}
+  .gate-p{color:var(--ink-60);line-height:1.7;font-size:15px;max-width:54ch;margin:0 auto 28px}
+  .gate-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .gate-row input{flex:1;min-width:220px;max-width:430px;border:1px solid var(--line-strong);background:var(--paper-2);
+    padding:12px 14px;font:13px 'Spline Sans Mono',monospace;color:var(--ink);outline:none}
+  .gate-row input:focus{border-color:var(--ink)}
+  .gate-err{color:var(--danger);margin-top:14px;font-size:11px;letter-spacing:.14em}
+  .gate-hint{margin-top:26px;color:var(--ink-40);font-size:11px;letter-spacing:.08em;line-height:1.9}
+
+  /* setup modal */
+  .overlay{position:fixed;inset:0;z-index:70;background:rgba(28,26,21,.38);backdrop-filter:blur(2px);display:grid;place-items:center;padding:20px}
+  .sheet{background:var(--paper);border:1px solid var(--ink);box-shadow:12px 12px 0 rgba(28,26,21,.18);
+    width:min(700px,100%);max-height:88vh;overflow:auto;padding:28px 30px 24px}
+  .sheet h2{font-family:'Fraunces',serif;font-weight:560;font-size:27px;margin:0;letter-spacing:-.01em}
+  .sheet .sub{color:var(--ink-60);font-size:10.5px;letter-spacing:.16em;margin-top:7px}
+  .field{margin-top:18px}
+  .field label{display:block;margin-bottom:8px;color:var(--ink-60);font-size:10.5px;letter-spacing:.18em}
+  .field input,.field select{width:100%;border:1px solid var(--line-strong);background:#FBF7EE;padding:10px 12px;
+    font:13px 'Spline Sans Mono',monospace;color:var(--ink);outline:none}
+  .field input:focus,.field select:focus{border-color:var(--ink)}
+  .two{display:grid;grid-template-columns:1.4fr 1fr;gap:14px}
+  .tokrow{display:flex;gap:8px}
+  .tokrow input{flex:1;min-width:0}
+  .note{margin-top:8px;color:var(--ink-40);font-size:10px;letter-spacing:.12em;line-height:1.7}
+  details{margin-top:18px;border-top:1px solid var(--line);padding-top:14px}
+  details summary{cursor:pointer;font-size:11px;letter-spacing:.14em}
+  .corsbox{margin-top:14px;border:1px dashed var(--line-strong);background:#FBF7EE;padding:14px}
+  .corsbox h4{margin:0 0 6px;font-size:11px;letter-spacing:.18em;color:var(--accent-ink)}
+  .corsbox p{margin:0 0 10px;font-size:12px;line-height:1.7;color:var(--ink-60)}
+  .codewrap{position:relative}
+  pre.code{background:#23211B;color:#E8E1CE;border:1px solid var(--ink);padding:14px;font:11px/1.6 'Spline Sans Mono',monospace;
+    overflow:auto;white-space:pre;margin:0}
+  .copybtn{position:absolute;top:8px;right:8px;background:var(--paper);border:1px solid var(--ink);padding:5px 10px;
+    cursor:pointer;font:600 10px 'Spline Sans Mono',monospace;letter-spacing:.14em}
+  .copybtn:hover{background:var(--paper-2)}
+  #diag{margin-top:18px;background:#23211B;color:#E8E1CE;border:1px solid var(--ink);padding:14px;
+    font-size:11px;line-height:1.55;max-height:170px;overflow:auto;white-space:pre-wrap;margin-bottom:0}
+  .sheet-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:24px;flex-wrap:wrap}
+  .foot-right{display:flex;gap:10px;margin-left:auto}
+  .primary{background:var(--ink);color:var(--paper);border:1px solid var(--ink);padding:11px 18px;cursor:pointer;font-size:11px;letter-spacing:.14em;transition:background .15s}
+  .primary:hover{background:var(--accent-ink);border-color:var(--accent-ink)}
+  .ghost{background:none;border:1px solid var(--line-strong);color:var(--ink);padding:11px 16px;cursor:pointer;font-size:11px;letter-spacing:.14em;transition:border-color .15s}
+  .ghost:hover{border-color:var(--ink)}
+  kbd{border:1px solid var(--line-strong);border-bottom-width:2px;background:var(--paper-2);padding:1px 7px;font-family:inherit;font-size:11px}
+  .kgrid{display:grid;grid-template-columns:auto 1fr;gap:13px 20px;margin-top:24px;font-size:12px;color:var(--ink-60)}
+  .kgrid span:nth-child(odd){color:var(--ink)}
+
+  #toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,14px);z-index:95;background:var(--ink);color:var(--paper);
+    border-left:4px solid var(--mark);box-shadow:6px 6px 0 rgba(28,26,21,.16);padding:11px 18px;
+    font:12px 'Spline Sans Mono',monospace;letter-spacing:.05em;opacity:0;pointer-events:none;transition:.25s;max-width:82vw}
+  #toast.on{opacity:1;transform:translate(-50%,0)}
+  #toast.err{border-left-color:var(--danger)}
+  #progress{position:fixed;top:0;left:0;height:3px;width:38%;background:var(--accent);z-index:100;opacity:0;pointer-events:none;transition:opacity .25s}
+  #progress.busy{opacity:1;animation:slide 1.1s ease-in-out infinite alternate}
+  @keyframes slide{from{transform:translateX(-70%)}to{transform:translateX(280%)}}
+
+  @media (max-width:760px){
+    .util-in,.bar-in,.list{padding-left:18px;padding-right:18px}
+    .bar-in{flex-wrap:wrap}
+    .row{grid-template-columns:34px 1fr;gap:0 12px}
+    .num{padding-top:2px}
+    .acts{grid-column:2;opacity:1;padding-top:2px}
+    .two{grid-template-columns:1fr}
+    .tabs{gap:16px}
+  }
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+<figure id="peek"><img alt="" referrerpolicy="no-referrer"/><figcaption></figcaption></figure>
+
+<header class="util">
+  <div class="util-in">
+    <div><span class="dot" id="dot"></span><span id="wire" class="mono"></span></div>
+    <nav class="util-right">
+      <button class="textbtn" id="btnSetup">SETUP</button>
+      <span class="sep">·</span>
+      <button class="textbtn" id="btnKeys">KEYS?</button>
+    </nav>
+  </div>
+</header>
+
+<section class="mast">
+  <div class="mast-meta mono" id="mastMeta"></div>
+  <h1 class="mast-title">The Daily <em>Reader</em></h1>
+  <div class="mast-sub mono">API.DAILY.DEV/PUBLIC/V1/FEEDS · CURSOR PAGINATION · DIRECT / PROXY ROUTING — YOUR KEY STAYS IN THIS BROWSER</div>
+  <div class="rule-double"></div>
+</section>
+
+<div class="bar">
+  <div class="bar-in">
+    <div class="tabs" id="tabs">
+      <button data-filter="all" class="active">ALL<b id="cAll">0</b></button>
+      <button data-filter="unread">UNREAD<b id="cUnread">0</b></button>
+      <button data-filter="saved">SAVED<b id="cSaved">0</b></button>
+    </div>
+    <div class="bar-right">
+      <label class="tagwrap" title="Server-side tag filter — type and press Enter"><span>#</span><input id="tagq" placeholder="tag" spellcheck="false"/></label>
+      <label class="search"><i data-lucide="search"></i><input id="q" placeholder="filter the wire…" spellcheck="false"/></label>
+      <button class="iconbtn" id="btnMd" title="Copy visible list as Markdown"><i data-lucide="clipboard-copy"></i></button>
+      <button class="iconbtn" id="btnRefresh" title="Refetch"><i data-lucide="refresh-cw"></i></button>
+    </div>
+  </div>
+</div>
+
+<main id="list" class="list"></main>
+
+<div class="more">
+  <button id="btnMore" class="loadmore mono">LOAD MORE POSTS</button>
+  <div id="endwire" class="end mono" hidden>— END OF THE WIRE —</div>
+</div>
+
+<footer class="foot mono"><span class="foot-brand">Created with ❤️ by <a href="https://naze.in" target="_blank" rel="noopener">Naze Technology</a></span></footer>
+
+<!-- first-run gate -->
+<div id="gate" class="gate">
+  <div class="gate-in">
+    <div class="gate-over mono">INTERNAL READING DESK · NO SERVERS · NO TRACKING</div>
+    <h1 class="gate-title">The Daily <em>Reader</em></h1>
+    <p class="gate-p">Paste your daily.dev personal access token. The page calls
+      <span class="mono">GET /public/v1/feeds/foryou</span> directly — and if the browser blocks it
+      (CORS), it automatically falls back to the tiny proxy described in SETUP.</p>
+    <div class="gate-row">
+      <input id="gateToken" type="password" placeholder="paste your daily.dev personal access token" autocomplete="off" spellcheck="false"/>
+      <button id="gateGo" class="primary mono">OPEN THE WIRE</button>
+    </div>
+    <div id="gateErr" class="gate-err mono" hidden>THE KEY FIELD IS EMPTY — PASTE IT FIRST</div>
+    <div class="gate-hint mono">To get your token, go to daily.dev settings → API → Personal Access Tokens</div>
+    <div class="gate-brand foot-brand mono">Created with ❤️ by <a href="https://naze.in" target="_blank" rel="noopener">Naze Technology</a></div>
+  </div>
+</div>
+
+<!-- setup modal -->
+<div id="modalSetup" class="overlay" hidden>
+  <div class="sheet">
+    <h2>Setup</h2>
+    <div class="sub mono">KEY, ROUTING AND DIAGNOSTICS — EVERYTHING STAYS IN THIS BROWSER</div>
+
+    <div class="field">
+      <label for="inpKey">PERSONAL ACCESS TOKEN (BEARER)</label>
+      <div class="tokrow">
+        <input id="inpKey" type="password" autocomplete="off" spellcheck="false"/>
+        <button id="btnEye" class="iconbtn" title="Show / hide"><i data-lucide="eye"></i></button>
+      </div>
+    </div>
+
+    <div class="field two">
+      <div>
+        <label for="inpProxy">PROXY URL (USED ON CORS FALLBACK)</label>
+        <input id="inpProxy" type="text" placeholder="http://localhost:8010" spellcheck="false"/>
+      </div>
+      <div>
+        <label for="selRoute">ROUTE</label>
+        <select id="selRoute">
+          <option value="auto">auto — direct, then proxy</option>
+          <option value="direct">direct only</option>
+          <option value="proxy">proxy only</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field two">
+      <div>
+        <label for="inpSize">PAGE SIZE (1–50)</label>
+        <input id="inpSize" type="number" min="1" max="50"/>
+      </div>
+      <div>
+        <label for="inpBase">API BASE</label>
+        <input id="inpBase" type="text" spellcheck="false"/>
+      </div>
+    </div>
+
+    <details id="corsHelp" open>
+      <summary class="mono">CORS BLOCKED? RUN THIS SMALL PROXY ON YOUR MACHINE</summary>
+      <div class="corsbox">
+        <h4 class="mono">DAILY-PROXY.JS — NODE, ZERO DEPENDENCIES</h4>
+          <p>Save this as <span class="mono">daily-proxy.js</span>, run <span class="mono">node daily-proxy.js</span>,
+            and keep the proxy URL above set to <span class="mono">http://localhost:8010</span>. Done — the page detects it automatically.
+           Tip: set the <span class="mono">DAILY_KEY</span> env var to keep the key on the server only.</p>
+        <div class="codewrap">
+          <button class="copybtn mono" id="btnCopyProxy">COPY</button>
+<pre id="proxyCode" class="code">// daily-proxy.js — daily.dev Public API CORS proxy (zero deps)
+// run: node daily-proxy.js
+// or:  DAILY_KEY=xxx node daily-proxy.js
+const http = require('http');
+const https = require('https');
+const { URL } = require('url');
+
+const PORT = Number(process.env.PORT) || 8010;
+const KEY = process.env.DAILY_KEY || '';
+const DAILY_HOST = 'api.daily.dev';
+const DAILY_BASE = '/public/v1';
+
+function sendJSON(res, status, data) {
+  const body = JSON.stringify(data);
+  res.writeHead(status, {
+    'Content-Type': 'application/json; charset=utf-8',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Authorization, api-key, Content-Type',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Cache-Control': 'no-store'
+  });
+  res.end(body);
+}
+
+function getToken(req) {
+  if (KEY) return KEY;
+  const auth = req.headers.authorization;
+  if (auth && /^Bearer\s+/i.test(auth)) return auth.replace(/^Bearer\s+/i, '').trim();
+  const apiKey = req.headers['api-key'];
+  return apiKey ? String(apiKey).trim() : '';
+}
+
+function proxyRequest(req, res) {
+  const incoming = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+  const token = getToken(req);
+  const headers = { Accept: 'application/json', 'User-Agent': 'Daily-Reader-Proxy/1.0' };
+  if (token) headers.Authorization = 'Bearer ' + token;
+  const target = DAILY_BASE + incoming.pathname + (incoming.search || '');
+
+  console.log(`[${new Date().toLocaleTimeString()}] ${req.method} ${req.url} → https://${DAILY_HOST}${target}`);
+
+  const up = https.request({ hostname: DAILY_HOST, port: 443, method: 'GET', path: target, headers }, upstream => {
+    let body = '';
+    upstream.setEncoding('utf8');
+    upstream.on('data', chunk => body += chunk);
+    upstream.on('end', () => {
+      let json;
+      try { json = JSON.parse(body); }
+      catch (_) { return sendJSON(res, upstream.statusCode || 502, { error: 'invalid_upstream_response', message: 'daily.dev returned a non-JSON response', upstreamStatus: upstream.statusCode }); }
+      sendJSON(res, upstream.statusCode || 502, json);
+    });
+  });
+  up.on('error', err => sendJSON(res, 502, { error: 'upstream_failed', message: err.message }));
+  up.end();
+}
+
+http.createServer((req, res) => {
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204, { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Authorization, api-key, Content-Type', 'Access-Control-Allow-Methods': 'GET, OPTIONS' });
+    return res.end();
+  }
+  if (req.method !== 'GET') return sendJSON(res, 405, { error: 'method_not_allowed' });
+  try { proxyRequest(req, res); } catch (err) { sendJSON(res, 500, { error: 'proxy_error', message: err.message }); }
+}).listen(PORT, () => console.log(`daily.dev proxy → http://localhost:${PORT}`));</pre>
+        </div>
+        <p style="margin-top:10px">Prefer a cloud deployment? The same idea works as a Cloudflare Worker —
+        forward the path to <span class="mono">api.daily.dev/public/v1</span>, echo the
+        <span class="mono">api-key</span> header, add
+        <span class="mono">access-control-allow-origin: *</span>. Ask me for that snippet if needed.
+        Note: the proxy is only needed if the browser blocks direct calls to daily.dev. If you can call it directly, you don't need a proxy.</p>
+      </div>
+    </details>
+
+    <pre id="diag" class="mono" hidden></pre>
+
+    <div class="sheet-foot">
+      <button id="btnTest" class="ghost mono">RUN TEST</button>
+      <div class="foot-right">
+        <button class="ghost mono" data-close>CLOSE</button>
+        <button id="btnSave" class="primary mono">SAVE &amp; LOAD FEED</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- keyboard modal -->
+<div id="modalKeys" class="overlay" hidden>
+  <div class="sheet" style="width:min(480px,100%)">
+    <h2>Keyboard</h2>
+    <div class="sub mono">THE DESK ANSWERS TO YOUR LEFT HAND</div>
+    <div class="kgrid mono">
+      <span><kbd>J</kbd> / <kbd>K</kbd></span><span>move down / up the feed</span>
+      <span><kbd>Enter</kbd> / <kbd>O</kbd></span><span>open the selected post</span>
+      <span><kbd>S</kbd></span><span>save / unsave for later</span>
+      <span><kbd>M</kbd></span><span>mark read / unread</span>
+      <span><kbd>C</kbd></span><span>copy the link</span>
+      <span><kbd>/</kbd></span><span>jump to the filter box</span>
+      <span><kbd>?</kbd></span><span>this panel</span>
+      <span><kbd>Esc</kbd></span><span>close panels</span>
+    </div>
+    <div class="sheet-foot">
+      <span class="sub mono">HOVER A ROW TO PEEK AT ITS COVER</span>
+      <button class="primary mono" data-close>CLOSE</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+(() => {
+'use strict';
+
+/* ============ helpers ============ */
+const $  = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function copyText(t){
+  if(navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(t);
+  return new Promise(res => {
+    const ta = document.createElement('textarea');
+    ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); }catch(_){}
+    ta.remove(); res();
+  });
+}
+function relTime(iso){
+  if(!iso) return '';
+  const d = new Date(iso), s = (Date.now() - d.getTime()) / 1000;
+  if(isNaN(s) || s < 0) return '';
+  if(s < 60) return 'now';
+  if(s < 3600) return Math.floor(s/60) + 'm';
+  if(s < 86400) return Math.floor(s/3600) + 'h';
+  if(s < 7*86400) return Math.floor(s/86400) + 'd';
+  return d.toLocaleDateString(undefined, {month:'short', day:'numeric'});
+}
+
+/* ============ config / state ============ */
+const K = {key:'ddr_key', proxy:'ddr_proxy', route:'ddr_route', psize:'ddr_psize', base:'ddr_base', read:'ddr_read', saved:'ddr_saved'};
+const state = {
+  key:   localStorage.getItem(K.key) || '',
+  proxy: localStorage.getItem(K.proxy) || 'http://localhost:8010',
+  route: localStorage.getItem(K.route) || 'auto',
+  base:  localStorage.getItem(K.base) || 'https://api.daily.dev/public/v1',
+  pageSize: parseInt(localStorage.getItem(K.psize), 10) || 20,
+  via: null,                       // 'direct' | 'proxy' — last route that worked
+  posts: [],
+  read:  new Set(JSON.parse(localStorage.getItem(K.read)  || '[]')),
+  saved: new Map(JSON.parse(localStorage.getItem(K.saved) || '[]')),
+  cursor: null, hasNext: true, loading: false,
+  filter: 'all', search: '', tag: '', selId: null, renderedOnce: false,
+};
+const persistRead  = () => localStorage.setItem(K.read,  JSON.stringify([...state.read].slice(-2000)));
+const persistSaved = () => localStorage.setItem(K.saved, JSON.stringify([...state.saved.entries()].slice(-400)));
+
+/* ============ dom ============ */
+const list = $('#list'), peek = $('#peek'), peekImg = peek.querySelector('img'),
+      peekCap = peek.querySelector('figcaption'), progress = $('#progress'),
+      btnMore = $('#btnMore'), endwire = $('#endwire'), qInput = $('#q'),
+      tagInput = $('#tagq'), btnRefresh = $('#btnRefresh');
+const icons = () => { if(window.lucide) lucide.createIcons(); };
+
+let typeTimer = null;
+function setWire(text, mode = 'idle'){
+  $('#dot').className = 'dot ' + mode;
+  const el = $('#wire');
+  clearInterval(typeTimer);
+  const suffix = state.via === 'proxy' ? ' · via proxy' : state.via === 'direct' ? ' · direct' : '';
+  const t = ' ' + text + suffix;
+  let i = 0; el.textContent = '';
+  typeTimer = setInterval(() => {
+    el.textContent = t.slice(0, ++i);
+    if(i >= t.length) clearInterval(typeTimer);
+  }, 13);
+}
+function diag(msg){
+  const d = $('#diag');
+  if(d.textContent.length > 6000) d.textContent = '';
+  d.hidden = false;
+  d.textContent += (d.textContent ? '\n\n' : '') + '[' + new Date().toLocaleTimeString() + '] ' + msg;
+  d.scrollTop = d.scrollHeight;
+}
+let toastT = null;
+function toast(msg, kind){
+  const t = $('#toast');
+  t.textContent = msg;
+  t.className = 'on' + (kind === 'err' ? ' err' : '');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => { t.className = ''; }, 3200);
+}
+
+/* ============ transport: direct first, proxy fallback ============ */
+async function callAPI(path, params = {}){
+  const qs = new URLSearchParams();
+  for(const [k, v] of Object.entries(params)) if(v !== '' && v != null) qs.set(k, v);
+  const suffix = path + (qs.toString() ? '?' + qs.toString() : '');
+  const attempts = state.route === 'proxy' ? ['proxy'] :
+    state.route === 'direct' ? ['direct'] :
+    (state.via ? [state.via, state.via === 'direct' ? 'proxy' : 'direct'] : ['direct','proxy']);
+  let lastErr = null;
+
+  for(const via of attempts){
+    if(via === 'proxy' && !state.proxy) continue;
+    const base = (via === 'proxy' ? state.proxy : state.base).replace(/\/+$/, '');
+    const url = base + suffix;
+    setWire('GET ' + (via === 'proxy' ? 'proxy' : 'api.daily.dev') + path + '…', 'busy');
+    try{
+      const headers = { Accept: 'application/json' };
+      if(state.key) headers.Authorization = 'Bearer ' + state.key;
+      const res = await fetch(url, { headers, credentials: 'omit' });
+      const text = await res.text();
+      let json = null;
+      try{ json = JSON.parse(text); }catch(_){ }
+      state.via = via;
+      if(!json) throw Object.assign(new Error('HTTP ' + res.status + ' — non-JSON response'), {status:res.status});
+      if(!res.ok){
+        const msg = json.message || json.error || json.detail || '';
+        throw Object.assign(new Error('HTTP ' + res.status + (msg ? ' — ' + msg : '')), {status:res.status, definite:true});
+      }
+      return json;
+    }catch(err){
+      lastErr = err;
+      const networkish = err instanceof TypeError || err.name === 'AbortError';
+      if(networkish){
+        diag('BLOCKED ' + url + '\n→ Browser/network refused this call. ' + (via === 'direct' ? 'Trying proxy…' : 'Proxy failed — is node daily-proxy.js running?'));
+        continue;
+      }
+      // In auto mode, try the proxy for an authentication/API error only when direct was the first route.
+      if(via === 'direct' && state.route === 'auto' && (err.status === 401 || err.status === 403)){
+        diag('DIRECT returned HTTP ' + err.status + '. Trying proxy next…');
+        continue;
+      }
+      throw err;
+    }
+  }
+  if(lastErr){
+    if(lastErr instanceof TypeError || lastErr.cors) lastErr.cors = true;
+    throw lastErr;
+  }
+  throw new Error('No usable route configured.');
+}
+
+/* ============ feed fetch ============ */
+ async function fetchPage(reset = false){
+  if(state.loading) return;
+  if(!state.key){ openGate(); return; }
+  if(!reset && !state.hasNext) return;
+
+  state.loading = true;
+  if(reset){ state.cursor = null; state.selId = null; state.hasNext = true; }
+  progress.classList.add('busy'); btnRefresh.classList.add('spin');
+  btnMore.disabled = true; btnMore.textContent = reset ? 'PULLING THE WIRE…' : 'PULLING THE NEXT PAGE…';
+
+  const params = { limit: state.pageSize };
+  if(state.cursor) params.cursor = state.cursor;
+  const endpoint = state.tag
+    ? '/feeds/tag/' + encodeURIComponent(state.tag)
+    : '/feeds/foryou';
+  const t0 = performance.now();
+
+  try{
+    const json = await callAPI(endpoint, params);
+    const ms = Math.round(performance.now() - t0);
+    const raw = Array.isArray(json.data) ? json.data : (findPostsArray(json) || []);
+    const nodes = raw.map(normalizePost).filter(p => p.permalink || p.id);
+
+    if(!raw.length && reset){
+      diag('GET ' + state.base + endpoint + ' — JSON came back but no posts found.\nRaw:\n' + JSON.stringify(json).slice(0, 1400));
+      toast('No posts returned — see SETUP diagnostics', 'err');
+      setWire('unexpected response shape — see SETUP', 'err');
+    }else{
+      if(reset) state.posts = nodes;
+      else {
+        const seen = new Set(state.posts.map(p => p.id));
+        state.posts = state.posts.concat(nodes.filter(p => !seen.has(p.id)));
+      }
+      const pagination = json.pagination || {};
+      state.hasNext = pagination.hasNextPage === true;
+      state.cursor = pagination.cursor || null;
+      if(!state.cursor) state.hasNext = false;
+
+      setWire(state.posts.length + ' posts on the desk · ' + ms + 'ms' +
+        (state.tag ? ' · #' + state.tag : '') + (state.hasNext ? '' : ' · end of the wire'), 'ok');
+      diag('GET ' + endpoint + ' ' + JSON.stringify(params) + ' — HTTP ok, ' + nodes.length +
+        ' posts' + (state.via === 'proxy' ? ' (via proxy)' : ' (direct)') +
+        '\nNext cursor: ' + (state.cursor ? state.cursor.slice(0, 120) : 'none'));
+    }
+    render();
+  }catch(err){
+    if(err.cors || err instanceof TypeError){
+      toast('CORS/network blocked — start the proxy (see SETUP)', 'err');
+      setWire('browser blocked the call — proxy needed', 'err');
+      openSetup();
+    }else if(err.status === 401 || err.status === 403){
+      toast('Key rejected (' + err.status + ') — check it in SETUP', 'err');
+      setWire('key rejected — see SETUP', 'err');
+      diag('HTTP ' + err.status + ' — Bearer token was not accepted. Verify the personal access token in daily.dev settings.');
+    }else{
+      toast('Request failed: ' + String(err.message || err).slice(0, 110), 'err');
+      setWire('wire down — see SETUP', 'err');
+      diag('FAILED ' + endpoint + ' → ' + (err.message || err));
+    }
+    if(!state.posts.length) render();
+  }finally{
+    state.loading = false;
+    progress.classList.remove('busy'); btnRefresh.classList.remove('spin');
+    btnMore.disabled = false; btnMore.textContent = 'LOAD MORE POSTS';
+  }
+}
+
+/* tolerant fallbacks (in case a field differs from the documented shape) */
+function looksLikePost(o){
+  return o && typeof o === 'object' && !Array.isArray(o) && (o.title || o.titleText) && (o.permalink || o.url || o.id);
+}
+function findPostsArray(json, depth = 0){
+  if(!json || typeof json !== 'object' || depth > 4) return null;
+  if(Array.isArray(json)) return json.some(looksLikePost) ? json : null;
+  for(const key of ['posts','data','items','results']){
+    if(json[key] != null){ const f = findPostsArray(json[key], depth + 1); if(f) return f; }
+  }
+  for(const v of Object.values(json)){ const f = findPostsArray(v, depth + 1); if(f) return f; }
+  return null;
+}
+function normalizePost(r){
+  if(r && r.node) r = r.node;
+  return {
+    id: String(r.id ?? r._id ?? r.permalink ?? Math.random()),
+    title: r.title ?? r.titleText ?? 'Untitled',
+    image: r.image ?? r.coverImage ?? '',
+    permalink: r.permalink ?? r.url ?? '',
+    publishedAt: r.publishedAt ?? r.createdAt ?? '',
+    readTime: r.readTime ?? null,
+    tags: Array.isArray(r.tags) ? r.tags.map(t => typeof t === 'string' ? t : (t && (t.name || t.slug || t.title)) || '').filter(Boolean) : [],
+    source: (r.source && typeof r.source === 'object')
+      ? { name: r.source.name ?? r.source.title ?? '', image: r.source.image ?? '' }
+      : null,
+  };
+}
+
+/* ============ rendering ============ */
+function visiblePosts(){
+  let l;
+  if(state.filter === 'saved') l = [...state.saved.values()].reverse();
+  else l = state.posts.slice();
+  if(state.filter === 'unread') l = l.filter(p => !state.read.has(p.id));
+  const s = state.search.trim().toLowerCase();
+  if(s) l = l.filter(p => ((p.title||'') + ' ' + ((p.source && p.source.name)||'') + ' ' + (p.tags||[]).join(' ')).toLowerCase().includes(s));
+  return l;
+}
+function updateCounts(){
+  $('#cAll').textContent    = state.posts.length;
+  $('#cUnread').textContent = state.posts.filter(p => !state.read.has(p.id)).length;
+  $('#cSaved').textContent  = state.saved.size;
+}
+function emptyHTML(){
+  const s = state.search.trim();
+  if(s) return `<div class="empty mono">NO MATCHES FOR “${esc(s)}”<br>TRY A SHORTER FILTER</div>`;
+  if(state.filter === 'saved')  return `<div class="empty mono">NOTHING ON THE SHELF YET<br>PRESS <b>S</b> ON ANY POST TO KEEP IT HERE</div>`;
+  if(state.filter === 'unread') return `<div class="empty mono">ALL CAUGHT UP<br>EVERY POST ON THE DESK HAS BEEN READ</div>`;
+  if(!state.posts.length) return `<div class="empty mono">THE WIRE IS QUIET<br><button class="linkbtn" id="emptySetup">OPEN SETUP</button> TO CHECK KEY &amp; PROXY</div>`;
+  return '';
+}
+function rowHTML(p, i){
+  const unread = !state.read.has(p.id);
+  const saved = state.saved.has(p.id);
+  const src = ((p.source && p.source.name) || '').toUpperCase();
+  const meta = [src, relTime(p.publishedAt), p.readTime ? p.readTime + ' MIN' : '']
+    .filter(Boolean).join(' <span class="msep">·</span> ');
+  const tags = (p.tags || []).slice(0, 4).map(t => `<span class="tag">#${esc(t)}</span>`).join('');
+  return `<article class="row${unread ? ' unread' : ''}" data-id="${esc(p.id)}" data-image="${esc(p.image || '')}" data-src="${esc((p.source && p.source.name) || 'via daily.dev')}">
+    <div class="num mono">${String(i + 1).padStart(2, '0')}</div>
+    <div class="t">
+      <h3 class="t-title">${esc(p.title || 'Untitled')}</h3>
+      <div class="t-meta mono">${meta}${tags ? '<span class="msep">·</span>' + tags : ''}</div>
+    </div>
+    <div class="acts">
+      <button class="ibtn${saved ? ' on' : ''}" data-act="save" title="Save for later (S)"><i data-lucide="${saved ? 'bookmark-check' : 'bookmark'}"></i></button>
+      <button class="ibtn" data-act="copy" title="Copy link (C)"><i data-lucide="link"></i></button>
+      <button class="ibtn" data-act="open" title="Open article (Enter)"><i data-lucide="arrow-up-right"></i></button>
+    </div>
+  </article>`;
+}
+function render(){
+  updateCounts();
+  $$('#tabs button').forEach(b => b.classList.toggle('active', b.dataset.filter === state.filter));
+  const vis = visiblePosts();
+  if(!vis.length){
+    list.innerHTML = emptyHTML();
+    const eb = $('#emptySetup'); if(eb) eb.addEventListener('click', openSetup);
+  } else {
+    const first = !state.renderedOnce;
+    list.innerHTML = vis.map(rowHTML).join('');
+    [...list.children].forEach((el, i) => el.style.setProperty('--i', Math.min(i, 16)));
+    if(first){ list.classList.add('first'); setTimeout(() => list.classList.remove('first'), 1600); state.renderedOnce = true; }
+  }
+  if(state.selId && !vis.some(p => p.id === state.selId)) state.selId = null;
+  paintSel();
+  const feedMode = state.filter === 'all' && !state.search.trim();
+  btnMore.hidden = !(feedMode && state.hasNext);
+  endwire.hidden = !(feedMode && !state.hasNext && state.posts.length);
+  icons();
+}
+function paintSel(){
+  $$('#list .row').forEach(r => r.classList.toggle('selected', r.dataset.id === state.selId));
+}
+
+/* ============ post actions ============ */
+const findPost = id => state.posts.find(p => p.id === id) || state.saved.get(id) || null;
+function markRead(id){
+  if(state.read.has(id)) return;
+  state.read.add(id); persistRead(); updateCounts();
+  if(state.filter === 'unread') render();
+  else {
+    const r = list.querySelector(`.row[data-id="${CSS.escape(id)}"]`);
+    if(r) r.classList.remove('unread');
+  }
+}
+function openPost(p){ if(!p) return; markRead(p.id); window.open(p.permalink, '_blank', 'noopener'); }
+function toggleSave(id){
+  if(state.saved.has(id)){ state.saved.delete(id); toast('Removed from the shelf'); }
+  else { const p = findPost(id); if(p){ state.saved.set(id, p); toast('Saved — press S again to let go'); } }
+  persistSaved(); render();
+}
+list.addEventListener('click', e => {
+  const row = e.target.closest('.row'); if(!row) return;
+  const id = row.dataset.id, p = findPost(id); if(!p) return;
+  const act = e.target.closest('[data-act]');
+  if(act){
+    if(act.dataset.act === 'save') toggleSave(id);
+    else if(act.dataset.act === 'copy') copyText(p.permalink).then(() => toast('Link copied to clipboard'));
+    else if(act.dataset.act === 'open') openPost(p);
+    return;
+  }
+  state.selId = id; paintSel();
+  openPost(p);
+});
+
+/* ============ toolbar ============ */
+ $('#tabs').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  state.filter = b.dataset.filter; state.selId = null; render();
+});
+qInput.addEventListener('input', () => { state.search = qInput.value; state.selId = null; render(); });
+tagInput.addEventListener('keydown', e => {
+  if(e.key !== 'Enter') return;
+  state.tag = tagInput.value.trim().replace(/^#/, '').toLowerCase();
+  fetchPage(true);
+});
+btnRefresh.addEventListener('click', () => fetchPage(true));
+btnMore.addEventListener('click', () => fetchPage(false));
+ $('#btnMd').addEventListener('click', () => {
+  const vis = visiblePosts();
+  if(!vis.length){ toast('Nothing to export — the list is empty', 'err'); return; }
+  const lines = ['# Daily Reader — ' + new Date().toLocaleString(), ''];
+  vis.forEach(p => lines.push('- [' + (p.title || 'Untitled').replace(/\]/g, '') + '](' + p.permalink + ')' +
+    ((p.source && p.source.name) ? ' — ' + p.source.name : '')));
+  copyText(lines.join('\n')).then(() => toast(vis.length + ' posts copied as Markdown'));
+});
+ $('#btnSetup').addEventListener('click', openSetup);
+ $('#btnKeys').addEventListener('click', () => openModal('#modalKeys'));
+
+/* ============ modals ============ */
+function openModal(sel){ $(sel).hidden = false; }
+function closeOverlays(){ $('#modalSetup').hidden = true; $('#modalKeys').hidden = true; }
+function anyOverlay(){ return !$('#modalSetup').hidden || !$('#modalKeys').hidden || !$('#gate').hidden; }
+ $$('.overlay').forEach(o => o.addEventListener('click', e => { if(e.target === o) closeOverlays(); }));
+document.addEventListener('click', e => { if(e.target.closest('[data-close]')) closeOverlays(); });
+
+function fillSetup(){
+  $('#inpKey').value = state.key;
+  $('#inpProxy').value = state.proxy;
+  $('#selRoute').value = state.route;
+  $('#inpSize').value = state.pageSize;
+  $('#inpBase').value = state.base;
+  if(!$('#diag').textContent) $('#diag').textContent = '— DIAGNOSTICS —\nRUN TEST or load the feed; exact results land here.';
+  $('#diag').hidden = false;
+}
+function openSetup(){ fillSetup(); openModal('#modalSetup'); icons(); }
+ $('#btnEye').addEventListener('click', () => { const i = $('#inpKey'); i.type = i.type === 'password' ? 'text' : 'password'; });
+ $('#btnCopyProxy').addEventListener('click', () =>
+  copyText($('#proxyCode').textContent).then(() => toast('daily-proxy.js copied — save & run it')));
+ $('#btnSave').addEventListener('click', () => {
+  state.key      = $('#inpKey').value.trim();
+  state.proxy    = $('#inpProxy').value.trim();
+  state.route    = $('#selRoute').value;
+  state.base     = $('#inpBase').value.trim().replace(/\/+$/, '') || 'https://api.daily.dev/public/v1';
+  state.pageSize = Math.max(1, Math.min(50, parseInt($('#inpSize').value, 10) || 20));
+  state.via = null; // re-probe routes after settings change
+  localStorage.setItem(K.key, state.key);
+  localStorage.setItem(K.proxy, state.proxy);
+  localStorage.setItem(K.route, state.route);
+  localStorage.setItem(K.base, state.base);
+  localStorage.setItem(K.psize, String(state.pageSize));
+  closeOverlays();
+  if(state.key) $('#gate').hidden = true;
+  toast('Saved — loading the feed');
+  fetchPage(true);
+});
+ $('#btnTest').addEventListener('click', async () => {
+  state.via = null;
+  setWire('testing the connection…', 'busy');
+  try{
+    const json = await callAPI('/feeds/foryou', { limit: 1 });
+    const n = (Array.isArray(json.posts) ? json.posts : findPostsArray(json) || []).length;
+    diag('TEST OK — HTTP ok, ' + n + ' sample post' + (n === 1 ? '' : 's') +
+         ' · route: ' + (state.via || '?') + '\n' + JSON.stringify(json).slice(0, 1200));
+    toast('Test passed via ' + (state.via || '?'));
+    setWire('test ok — the wire is sound', 'ok');
+  } catch(err){
+    if(err.cors){
+      diag('TEST BLOCKED — direct call refused by the browser AND the proxy failed.\nFix: save daily-proxy.js (COPY button above), run "node daily-proxy.js", keep proxy URL http://localhost:8010, then RUN TEST again.');
+      toast('Blocked on both routes — start the proxy', 'err');
+    } else if(err.status === 401 || err.status === 403){
+      diag('TEST HTTP ' + err.status + ' — key rejected. Check the API key.');
+      toast('Key rejected — see diagnostics', 'err');
+    } else {
+      diag('TEST FAILED → ' + (err.message || err));
+      toast('Test failed — see diagnostics', 'err');
+    }
+    setWire('test failed — see diagnostics', 'err');
+  }
+});
+
+/* ============ gate ============ */
+function openGate(){ $('#gate').hidden = false; setTimeout(() => $('#gateToken').focus(), 60); }
+function saveGate(){
+  const t = $('#gateToken').value.trim();
+  if(!t){ $('#gateErr').hidden = false; return; }
+  $('#gateErr').hidden = true;
+  state.key = t; localStorage.setItem(K.key, t);
+  $('#gate').hidden = true;
+  toast('Key kept in this browser — opening the wire');
+  fetchPage(true);
+}
+ $('#gateGo').addEventListener('click', saveGate);
+ $('#gateToken').addEventListener('keydown', e => { if(e.key === 'Enter') saveGate(); });
+
+/* ============ keyboard ============ */
+const bySel = () => visiblePosts().find(p => p.id === state.selId) || null;
+function move(d){
+  const vis = visiblePosts(); if(!vis.length) return;
+  let i = vis.findIndex(p => p.id === state.selId);
+  i = i < 0 ? 0 : Math.max(0, Math.min(vis.length - 1, i + d));
+  state.selId = vis[i].id; paintSel();
+  const r = list.querySelector('.row.selected');
+  if(r) r.scrollIntoView({ block: 'nearest' });
+}
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape'){
+    if(!$('#gate').hidden) return;
+    if(anyOverlay()) closeOverlays();
+    else if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) e.target.blur();
+    return;
+  }
+  if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName) || anyOverlay()) return;
+  switch(e.key){
+    case 'j': case 'ArrowDown': e.preventDefault(); move(1); break;
+    case 'k': case 'ArrowUp':   e.preventDefault(); move(-1); break;
+    case 'Enter': case 'o': openPost(bySel()); break;
+    case 's': { const p = bySel(); if(p) toggleSave(p.id); break; }
+    case 'm': {
+      const p = bySel(); if(!p) break;
+      if(state.read.has(p.id)) state.read.delete(p.id); else state.read.add(p.id);
+      persistRead(); updateCounts(); render(); break;
+    }
+    case 'c': { const p = bySel(); if(p) copyText(p.permalink).then(() => toast('Link copied to clipboard')); break; }
+    case '/': e.preventDefault(); qInput.focus(); break;
+    case '?': openModal('#modalKeys'); break;
+  }
+});
+
+/* ============ hover peek ============ */
+const hoverable = matchMedia('(hover: hover)').matches;
+let pkX = innerWidth/2, pkY = innerHeight/2, pkTX = pkX, pkTY = pkY, pkOn = false;
+document.addEventListener('mousemove', e => { pkTX = e.clientX; pkTY = e.clientY; });
+function hidePeek(){ pkOn = false; peek.classList.remove('on'); }
+list.addEventListener('mouseover', e => {
+  if(!hoverable) return;
+  const row = e.target.closest('.row');
+  const img = row && row.dataset.image;
+  if(row && img){
+    if(peekImg.getAttribute('src') !== img) peekImg.src = img;
+    peekCap.textContent = row.dataset.src || 'via daily.dev';
+    if(!pkOn){ pkX = pkTX; pkY = pkTY; }
+    pkOn = true; peek.classList.add('on');
+  } else hidePeek();
+});
+list.addEventListener('mouseleave', hidePeek);
+window.addEventListener('scroll', hidePeek, { passive: true });
+peekImg.addEventListener('error', hidePeek);
+(function loop(){
+  pkX += (pkTX - pkX) * 0.13; pkY += (pkTY - pkY) * 0.13;
+  const rot = Math.max(-8, Math.min(8, (pkTX - pkX) * 0.15));
+  const w = 266, h = 190;
+  let x = pkX + 26; if(x + w > innerWidth - 10) x = pkX - 26 - w;
+  const y = Math.max(10, Math.min(innerHeight - h - 10, pkY - h / 2));
+  peek.style.transform = `translate(${x}px, ${y}px) rotate(${rot}deg)`;
+  requestAnimationFrame(loop);
+})();
+
+/* ============ boot ============ */
+(function mast(){
+  const n = new Date();
+  const issue = Math.floor((n - new Date(2020, 0, 1)) / 864e5);
+  $('#mastMeta').textContent = '№ ' + String(issue).padStart(5, '0') + ' · ' +
+    n.toLocaleDateString(undefined, {weekday:'long', month:'long', day:'numeric', year:'numeric'}).toUpperCase() +
+    ' · ' + n.toLocaleTimeString(undefined, {hour:'2-digit', minute:'2-digit'});
+})();
+render();
+setWire(state.key ? 'standby — the wire is yours' : 'no key on file', 'idle');
+if(state.key){ $('#gate').hidden = true; fetchPage(true); } else openGate();
+})();
+</script>
+</body>
+</html>
