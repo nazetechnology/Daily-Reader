@@ -8,7 +8,7 @@ Created by [Naze Technology](https://naze.in).
 
 The live GitHub Pages site is available for testing and quick demos:
 
-[Open The Daily Reader](https://nazetechnology.github.io/Daily-Reader/)
+[Open The Daily Reader](https://daily.naze.in/)
 
 For regular use, download the latest **release version** from GitHub. The release version is the recommended, stable option for users who want to use the app without working from source code.
 
