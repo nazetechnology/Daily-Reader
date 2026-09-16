@@ -48,8 +48,11 @@ To publish a live test version:
 1. Push the repository to GitHub.
 2. Open the repository's **Settings** tab.
 3. Go to **Pages** under **Code and automation**.
-4. Select **Deploy from a branch**, choose the branch containing `index.html`, and choose the `/ (root)` folder.
-5. Select **Save**, then open the published Pages URL after GitHub finishes deploying.
+4. Under **Build and deployment**, select **GitHub Actions** as the source.
+5. Push to `main`, or run the **Deploy to GitHub Pages** workflow from the repository's **Actions** tab.
+6. Open the published Pages URL after GitHub finishes deploying.
+
+The included `.github/workflows/pages.yml` deploys the repository root automatically whenever changes are pushed to `main`.
 
 GitHub Pages runs the static `index.html` file but cannot run Node.js. On a `github.io` URL, the reader defaults to the direct daily.dev API route and does not assume a local proxy. If direct API requests are blocked by CORS, use a separately hosted CORS proxy and enter its URL in **SETUP**, or return to local use with the included `daily-proxy.js`.
 
