@@ -8,7 +8,7 @@ Use the production website here:
 
 [Open The Daily Reader](https://daily.naze.in/)
 
-The site uses the included PHP proxy to communicate with the daily.dev API.
+The current live deployment uses the included PHP proxy to communicate with the daily.dev API.
 
 ## Features
 
@@ -17,6 +17,13 @@ The site uses the included PHP proxy to communicate with the daily.dev API.
 - Save posts for later and mark posts as read.
 - Open articles, copy links, and export the visible list as Markdown.
 - Works without a build step or frontend package installation.
+
+## Requirements
+
+- A modern web browser.
+- A daily.dev personal access token.
+- A server-side proxy only when direct browser requests are blocked by CORS.
+- Choose either PHP with cURL or Node.js for the proxy. Both are optional; you do not need to install or run both.
 
 ## How to Use
 
@@ -56,17 +63,21 @@ py -m http.server 8000
 
 Then open [http://localhost:8000](http://localhost:8000).
 
-If the browser blocks direct API requests because of CORS, start the local Node.js proxy in a second terminal:
+If the browser blocks direct API requests because of CORS, start the optional local Node.js proxy in a second terminal:
 
 ```powershell
 node .\daily-proxy.js
 ```
 
-The local proxy listens on `http://localhost:8010` by default. Configure that address in **SETUP** if required.
+The local Node.js proxy listens on `http://localhost:8010` by default. Configure that address in **SETUP** if required. You can also use the PHP proxy instead if your server supports PHP and cURL.
 
 ## Shared Hosting or VPS Deployment
 
-The project can run on any PHP-compatible shared hosting account or VPS. Upload these files to your web root, such as `public_html`:
+The project can run on any shared hosting account or VPS. Choose one proxy option based on what your server supports.
+
+### PHP proxy
+
+Use this option on a PHP-compatible server with cURL enabled. Upload these files to your web root, such as `public_html`:
 
 ```text
 index.html
@@ -74,9 +85,13 @@ proxy.php
 .htaccess
 ```
 
-Your server must have PHP, cURL, Apache or an equivalent web server, and HTTPS enabled. The PHP proxy forwards feed requests to daily.dev, handles browser preflight requests, and keeps the frontend and proxy on the same HTTPS domain.
+The PHP deployment requires PHP, cURL, Apache or an equivalent web server, and HTTPS. The PHP proxy forwards feed requests to daily.dev, handles browser preflight requests, and keeps the frontend and proxy on the same HTTPS domain.
 
-The Node.js file is for local development. Standard PHP hosting does not run `daily-proxy.js` as a server.
+### Node.js proxy
+
+Use this option on a VPS or another server that supports long-running Node.js processes. Run `daily-proxy.js`, keep the frontend and proxy reachable over HTTPS, and set the proxy URL in **SETUP**.
+
+The Node.js proxy and PHP proxy are alternatives. Choose one; the application does not require both.
 
 ## Community Support
 
@@ -100,9 +115,9 @@ Please keep contributions focused and preserve the simple, dependency-free setup
 ## Project Files
 
 - `index.html` - the frontend application.
-- `proxy.php` - the PHP API proxy for shared hosting or VPS deployment.
+- `proxy.php` - the optional PHP API proxy.
 - `.htaccess` - HTTPS, proxy routing, and basic web-server rules.
-- `daily-proxy.js` - the optional local Node.js proxy.
+- `daily-proxy.js` - the optional Node.js API proxy.
 - `LICENSE` - the MIT license.
 
 ## License
