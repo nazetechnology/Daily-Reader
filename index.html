@@ -634,13 +634,16 @@ function findPostsArray(json, depth = 0){
   for(const v of Object.values(json)){ const f = findPostsArray(v, depth + 1); if(f) return f; }
   return null;
 }
+function firstText(...values){
+  return values.find(v => typeof v === 'string' && v.trim())?.trim() || '';
+}
 function normalizePost(r){
   if(r && r.node) r = r.node;
   return {
     id: String(r.id ?? r._id ?? r.permalink ?? Math.random()),
     title: r.title ?? r.titleText ?? 'Untitled',
     image: r.image ?? r.coverImage ?? '',
-    permalink: r.permalink ?? r.url ?? '',
+    permalink: firstText(r.permalink, r.url, r.originalUrl, r.canonicalUrl),
     publishedAt: r.publishedAt ?? r.createdAt ?? '',
     readTime: r.readTime ?? null,
     tags: Array.isArray(r.tags) ? r.tags.map(t => typeof t === 'string' ? t : (t && (t.name || t.slug || t.title)) || '').filter(Boolean) : [],
