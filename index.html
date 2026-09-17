@@ -637,18 +637,47 @@ function findPostsArray(json, depth = 0){
 function firstText(...values){
   return values.find(v => typeof v === 'string' && v.trim())?.trim() || '';
 }
+function postSources(record){
+  const sources = [record];
+  for(const key of ['node', 'post', 'sharedPost', 'article', 'data']){
+    const value = record && record[key];
+    if(value && typeof value === 'object') sources.push(value);
+  }
+  return sources;
+}
+function deepText(record, keys, depth = 0, seen = new Set()){
+  if(!record || typeof record !== 'object' || depth > 5 || seen.has(record)) return '';
+  seen.add(record);
+  for(const key of keys){
+    const value = record[key];
+    if(typeof value === 'string' && value.trim()) return value.trim();
+  }
+  for(const value of Object.values(record)){
+    const found = deepText(value, keys, depth + 1, seen);
+    if(found) return found;
+  }
+  return '';
+}
 function normalizePost(r){
-  if(r && r.node) r = r.node;
+  const sources = postSources(r);
+  const value = key => firstText(...sources.map(source => source && source[key]));
+  const id = sources.map(source => source && (source.id ?? source._id)).find(Boolean);
+  const source = sources.map(item => item && item.source)
+    .find(item => item && typeof item === 'object');
+  const postId = String(id ?? value('permalink') ?? value('url') ?? Math.random());
+  const permalink = deepText(r, ['permalink', 'url', 'originalUrl', 'canonicalUrl', 'articleUrl', 'websiteUrl', 'link', 'href'])
+    || (id ? 'https://app.daily.dev/posts/' + encodeURIComponent(postId) : '');
   return {
-    id: String(r.id ?? r._id ?? r.permalink ?? Math.random()),
-    title: r.title ?? r.titleText ?? 'Untitled',
-    image: r.image ?? r.coverImage ?? '',
-    permalink: firstText(r.permalink, r.url, r.originalUrl, r.canonicalUrl),
-    publishedAt: r.publishedAt ?? r.createdAt ?? '',
-    readTime: r.readTime ?? null,
-    tags: Array.isArray(r.tags) ? r.tags.map(t => typeof t === 'string' ? t : (t && (t.name || t.slug || t.title)) || '').filter(Boolean) : [],
-    source: (r.source && typeof r.source === 'object')
-      ? { name: r.source.name ?? r.source.title ?? '', image: r.source.image ?? '' }
+    id: postId,
+    title: deepText(r, ['title', 'titleText', 'headline', 'name']) || 'Untitled',
+    image: value('image') || value('coverImage'),
+    permalink,
+    publishedAt: value('publishedAt') || value('createdAt'),
+    readTime: sources.map(source => source && source.readTime).find(Boolean) || null,
+    tags: sources.flatMap(source => Array.isArray(source && source.tags) ? source.tags : [])
+      .map(t => typeof t === 'string' ? t : (t && (t.name || t.slug || t.title)) || '').filter(Boolean),
+    source: source
+      ? { name: firstText(source.name, source.title), image: firstText(source.image) }
       : null,
   };
 }
@@ -731,7 +760,11 @@ function markRead(id){
     if(r) r.classList.remove('unread');
   }
 }
-function openPost(p){ if(!p) return; markRead(p.id); window.open(p.permalink, '_blank', 'noopener'); }
+function openPost(p){
+  if(!p) return;
+  if(!p.permalink){ toast('This post has no article link', 'err'); return; }
+  markRead(p.id); window.open(p.permalink, '_blank', 'noopener');
+}
 function toggleSave(id){
   if(state.saved.has(id)){ state.saved.delete(id); toast('Removed from the shelf'); }
   else { const p = findPost(id); if(p){ state.saved.set(id, p); toast('Saved — press S again to let go'); } }
