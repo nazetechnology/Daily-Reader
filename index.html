@@ -68,6 +68,19 @@
   .tagwrap span{color:var(--accent-ink);font-family:'Spline Sans Mono',monospace;font-size:12px}
   .tagwrap input{border:none;background:none;outline:none;font:12px 'Spline Sans Mono',monospace;width:80px;color:var(--ink)}
   .search input::placeholder,.tagwrap input::placeholder{color:var(--ink-40)}
+  .profile-card{max-width:1080px;margin:0 auto;padding:18px 28px 4px}
+  .profile-card-in{display:flex;align-items:center;gap:16px;border:1px solid var(--line-strong);background:var(--paper-2);padding:15px 16px;box-shadow:5px 5px 0 rgba(28,26,21,.1)}
+  .profile-card img,.profile-avatar{width:58px;height:58px;border-radius:50%;object-fit:cover;background:var(--accent);border:1px solid var(--line);flex:none}
+  .profile-copy{min-width:0;flex:1}
+  .profile-name{font-family:'Fraunces',serif;font-size:25px;line-height:1.05;margin:0 0 4px}
+  .profile-handle{color:var(--accent-ink);font-size:11px;letter-spacing:.1em}
+  .profile-bio{color:var(--ink-60);font-size:12px;line-height:1.45;margin:7px 0 0;max-width:70ch}
+  .profile-meta{display:flex;gap:14px;flex-wrap:wrap;color:var(--ink-60);font-size:10px;letter-spacing:.1em;margin-top:8px;text-transform:uppercase}
+  .profile-meta b{color:var(--ink)}
+  .profile-actions{display:flex;align-items:center;gap:12px;flex:none}
+  .profile-link{color:var(--accent-ink);font:11px 'Spline Sans Mono',monospace;letter-spacing:.08em;text-decoration:underline}
+  .profile-close{border:1px solid var(--line);background:none;cursor:pointer;width:28px;height:28px;display:grid;place-items:center;color:var(--ink)}
+  .profile-close:hover{border-color:var(--ink)}
   .iconbtn{width:31px;height:31px;display:grid;place-items:center;border:1px solid var(--line);background:none;cursor:pointer;color:var(--ink);transition:border-color .15s}
   .iconbtn:hover{border-color:var(--ink)}
   .iconbtn svg{width:15px;height:15px}
@@ -187,6 +200,9 @@
     .acts{grid-column:2;opacity:1;padding-top:2px}
     .two{grid-template-columns:1fr}
     .tabs{gap:16px}
+    .profile-card{padding-left:18px;padding-right:18px}
+    .profile-card-in{align-items:flex-start}
+    .profile-actions{margin-left:auto}
   }
   @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
@@ -198,6 +214,7 @@
 
 <header class="util">
   <div class="util-in">
+    <button class="iconbtn" id="btnProfile" title="View my daily.dev profile"><i data-lucide="user-round"></i></button>
     <div><span class="dot" id="dot"></span><span id="wire" class="mono"></span></div>
     <nav class="util-right">
       <button class="textbtn" id="btnSetup">SETUP</button>
@@ -229,6 +246,8 @@
     </div>
   </div>
 </div>
+
+<section id="profileResult" class="profile-card" hidden aria-live="polite"></section>
 
 <main id="list" class="list"></main>
 
@@ -470,7 +489,8 @@ const persistSaved = () => localStorage.setItem(K.saved, JSON.stringify([...stat
 const list = $('#list'), peek = $('#peek'), peekImg = peek.querySelector('img'),
       peekCap = peek.querySelector('figcaption'), progress = $('#progress'),
       btnMore = $('#btnMore'), endwire = $('#endwire'), qInput = $('#q'),
-      tagInput = $('#tagq'), btnRefresh = $('#btnRefresh');
+  tagInput = $('#tagq'), btnProfile = $('#btnProfile'), profileResult = $('#profileResult'),
+  btnRefresh = $('#btnRefresh');
 const icons = () => { if(window.lucide) lucide.createIcons(); };
 
 let typeTimer = null;
@@ -551,6 +571,76 @@ async function callAPI(path, params = {}){
     throw lastErr;
   }
   throw new Error('No usable route configured.');
+}
+
+/* ============ current profile ============ */
+function profileValue(record, keys){
+  for(const key of keys){
+    const value = record && record[key];
+    if(value !== null && value !== undefined && value !== '') return value;
+  }
+  return '';
+}
+function normalizeProfile(json){
+  const profile = json && json.data && !Array.isArray(json.data) ? json.data : (json || {});
+  return {
+    name: String(profileValue(profile, ['name']) || 'Daily.dev member'),
+    username: String(profileValue(profile, ['username']) || ''),
+    bio: String(profileValue(profile, ['bio']) || ''),
+    image: String(profileValue(profile, ['image']) || ''),
+    reputation: profileValue(profile, ['reputation']),
+    isPlus: profile.isPlus === true,
+    experienceLevel: String(profileValue(profile, ['experienceLevel']) || ''),
+    permalink: String(profileValue(profile, ['permalink']) || ''),
+    location: profile.location && [profile.location.city, profile.location.country].filter(Boolean).join(', '),
+    streak: profile.streak && profile.streak.current !== undefined ? profile.streak.current : '',
+    socialLinks: Array.isArray(profile.socialLinks) ? profile.socialLinks : [],
+  };
+}
+function profileMarkup(profile){
+  const avatar = profile.image
+    ? `<img src="${esc(profile.image)}" alt="" referrerpolicy="no-referrer">`
+    : '<div class="profile-avatar"></div>';
+  const meta = [
+    profile.reputation !== '' ? '<span><b>' + esc(profile.reputation) + '</b> reputation</span>' : '',
+    profile.isPlus ? '<span><b>PLUS</b> member</span>' : '',
+    profile.experienceLevel ? '<span><b>' + esc(profile.experienceLevel) + '</b></span>' : '',
+    profile.location ? '<span><b>' + esc(profile.location) + '</b></span>' : '',
+    profile.streak !== '' ? '<span><b>' + esc(profile.streak) + '</b> day streak</span>' : '',
+  ].filter(Boolean).join('');
+  const links = profile.socialLinks.map(link => {
+    const url = typeof link.url === 'string' ? link.url : '';
+    return /^https?:\/\//i.test(url) ? `<a class="profile-link" href="${esc(url)}" target="_blank" rel="noopener">${esc(link.platform || 'SOCIAL')}</a>` : '';
+  }).join('');
+  const profileLink = /^https?:\/\//i.test(profile.permalink) ? `<a class="profile-link" href="${esc(profile.permalink)}" target="_blank" rel="noopener">OPEN PROFILE</a>` : '';
+  return `<div class="profile-card-in">
+    ${avatar}
+    <div class="profile-copy">
+      <h2 class="profile-name">${esc(profile.name)}</h2>
+      ${profile.username ? `<div class="profile-handle mono">@${esc(profile.username)}</div>` : ''}
+      ${profile.bio ? `<p class="profile-bio">${esc(profile.bio)}</p>` : ''}
+      ${meta ? `<div class="profile-meta mono">${meta}</div>` : ''}
+    </div>
+    <div class="profile-actions">${links}${profileLink}<button class="profile-close" id="btnProfileClose" type="button" title="Close profile"><i data-lucide="x"></i></button></div>
+  </div>`;
+}
+async function loadCurrentProfile(){
+  if(!state.key){ openGate(); return; }
+  btnProfile.disabled = true;
+  profileResult.hidden = false;
+  profileResult.innerHTML = '<div class="empty mono">LOADING YOUR PROFILE…</div>';
+  try{
+    const json = await callAPI('/profile/');
+    profileResult.innerHTML = profileMarkup(normalizeProfile(json));
+    profileResult.querySelector('#btnProfileClose').addEventListener('click', () => { profileResult.hidden = true; });
+    icons();
+    setWire('profile loaded', 'ok');
+  }catch(err){
+    profileResult.innerHTML = '<div class="empty mono">YOUR PROFILE COULD NOT BE LOADED<br>CHECK THE TOKEN IN SETUP</div>';
+    toast('Profile request failed: ' + String(err.message || err).slice(0, 90), 'err');
+  }finally{
+    btnProfile.disabled = false;
+  }
 }
 
 /* ============ feed fetch ============ */
@@ -795,6 +885,7 @@ tagInput.addEventListener('keydown', e => {
   state.tag = tagInput.value.trim().replace(/^#/, '').toLowerCase();
   fetchPage(true);
 });
+btnProfile.addEventListener('click', loadCurrentProfile);
 btnRefresh.addEventListener('click', () => fetchPage(true));
 btnMore.addEventListener('click', () => fetchPage(false));
  $('#btnMd').addEventListener('click', () => {
