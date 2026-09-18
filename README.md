@@ -1,5 +1,5 @@
 <p align="center">
-  <strong>The Daily Reader</strong>
+  <img src="./assets/logo.png" alt="Plynk" width="260" />
 </p>
 
 <p align="center">
