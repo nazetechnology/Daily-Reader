@@ -1,146 +1,127 @@
-# The Daily Reader
+<p align="center">
+  <strong>The Daily Reader</strong>
+</p>
 
-A lightweight reading desk for the daily.dev public feed, created by [Naze Technology](https://naze.in).
+<p align="center">
+  <strong>A focused, privacy-conscious reading desk for the daily.dev public feed</strong>
+</p>
 
-## Live Website
+<p align="center">
+  <img src="https://img.shields.io/badge/Frontend-HTML%20%7C%20CSS%20%7C%20JavaScript-1C1A15?style=for-the-badge" alt="HTML CSS JavaScript" />
+  <img src="https://img.shields.io/badge/API-daily.dev-1D6F4C?style=for-the-badge" alt="daily.dev API" />
+  <img src="https://img.shields.io/badge/Proxy-PHP%20%7C%20Node.js-1C1A15?style=for-the-badge" alt="PHP and Node.js proxy" />
+  <img src="https://img.shields.io/badge/Dependencies-Zero-1D6F4C?style=for-the-badge" alt="Zero frontend dependencies" />
+  <img src="https://img.shields.io/badge/License-MIT-1C1A15?style=for-the-badge" alt="MIT License" />
+</p>
 
-Use the production website here:
+<p align="center">
+  <img src="./assets/daily-reader-tour.gif" alt="The Daily Reader feature tour" width="100%" />
+</p>
 
-[Open The Daily Reader](https://daily.naze.in/)
+---
 
-The current live deployment uses the included PHP proxy to communicate with the daily.dev API.
+## Overview
+
+The Daily Reader is a lightweight reading desk for the [daily.dev](https://daily.dev/) public feed. It turns a busy stream of developer stories into a calm, keyboard-friendly workspace for reading, filtering, saving, and exporting.
+
+It runs as a plain static web app with no build step and no frontend package installation. Use direct API requests when your browser permits them, or route requests through the included PHP or Node.js proxy when CORS gets in the way.
 
 ## Features
 
-- Read daily.dev posts in a focused feed.
-- Filter posts by unread, saved, tag, or text search.
-- Save posts for later and mark posts as read.
-- Open articles, copy links, and export the visible list as Markdown.
-- Works without a build step or frontend package installation.
+- Focused feed with cursor-based pagination and a **LOAD MORE POSTS** workflow.
+- Fast filters for all posts, unread posts, saved posts, tags, and free-text search.
+- Local read history and saved posts stored in the browser, not in a hosted database.
+- Profile lookup, article previews, direct article links, and hover image peek.
+- One-click Markdown export for the currently visible list.
+- Keyboard shortcuts for moving through the feed, saving posts, marking posts read, and opening setup.
+- Direct, PHP proxy, and Node.js proxy routing options.
+- Responsive layout with reduced-motion support and no frontend build toolchain.
 
 ## Requirements
 
 - A modern web browser.
 - A daily.dev personal access token.
-- A server-side proxy only when direct browser requests are blocked by CORS.
-- Choose either PHP with cURL or Node.js for the proxy. Both are optional; you do not need to install or run both.
+- PHP with cURL or Node.js only when a proxy is needed for CORS.
 
-## How to Use
+## Quick Start
 
-1. Open [daily.naze.in](https://daily.naze.in/).
-2. Enter your own daily.dev personal access token when the startup window appears.
-3. Select **OPEN THE WIRE**.
-4. Read, filter, save, and manage your feed.
+1. Open the [live reader](https://daily.naze.in/) or serve the repository locally.
+2. Enter your own daily.dev token in **SETUP**.
+3. Choose the direct route, or configure `/proxy.php` or `http://localhost:8010`.
+4. Select **OPEN THE WIRE** and start reading.
 
-The token is entered only in your browser window. It is not included in the public source code, URL, or README.
-
-## Release Version
-
-For everyday use, download the latest stable version from the [Releases](https://github.com/nazetechnology/Daily-Reader/releases) page. The release version is recommended for users who want a ready-to-use copy without changing the source code.
-
-Use the live website for the simplest experience. Use the source code when you want to inspect, customize, or contribute to the project.
-
-## Privacy and Security
-
-- Each user enters and uses their own daily.dev token.
-- The token is stored in that user's browser local storage and is not hard-coded in this repository.
-- The token is sent through HTTPS as an authorization header when the feed is requested.
-- The PHP proxy does not intentionally save tokens or API responses.
-- Never share your token or add it to an issue, screenshot, URL, source file, or public post.
-- Do not use the live website on a shared or public computer. Clear browser storage or revoke the token when necessary.
-
-The live website is convenient, but privacy depends on your browser, device, hosting account, and token handling. For maximum privacy, run the project locally.
+The token is entered in your browser and is not committed to this repository, URL, or README.
 
 ## Run Locally
 
-Local use is the privacy-first option and does not require the public website.
-
-### Option 1: Static frontend server
-
-Use this option to serve the frontend files for testing:
+### Static frontend
 
 ```powershell
 py -m http.server 8000
 ```
 
-Then open [http://localhost:8000](http://localhost:8000).
+Open [http://localhost:8000](http://localhost:8000), then configure the API in **SETUP**.
 
-### Option 2: PHP server and proxy
-
-Use this option when PHP and cURL are available. From the project directory, run:
+### PHP proxy
 
 ```powershell
 php -S localhost:8000
 ```
 
-Open [http://localhost:8000](http://localhost:8000), then set the proxy URL to `/proxy.php` and the route to `proxy` in **SETUP**.
-
-### Option 3: Node.js proxy
-
-Use this option when Node.js is available. Start the frontend server in one terminal:
-
-```powershell
-py -m http.server 8000
-```
-
-Then start the Node.js proxy in a second terminal:
-
-```powershell
-node .\daily-proxy.js
-```
-
-The Node.js proxy listens on `http://localhost:8010` by default. Keep that address in **SETUP** and use the `auto` or `proxy` route.
-
-Choose the PHP proxy or Node.js proxy when direct browser requests are blocked by CORS. You do not need to run both proxy options.
-
-## Shared Hosting or VPS Deployment
-
-The project can run on any shared hosting account or VPS. Choose one proxy option based on what your server supports.
-
-### PHP proxy
-
-Use this option on a PHP-compatible server with cURL enabled. Upload these files to your web root, such as `public_html`:
-
-```text
-index.html
-proxy.php
-.htaccess
-```
-
-The PHP deployment requires PHP, cURL, Apache or an equivalent web server, and HTTPS. The PHP proxy forwards feed requests to daily.dev, handles browser preflight requests, and keeps the frontend and proxy on the same HTTPS domain.
+Open [http://localhost:8000](http://localhost:8000), set the proxy URL to `/proxy.php`, and select the `proxy` route.
 
 ### Node.js proxy
 
-Use this option on a VPS or another server that supports long-running Node.js processes. Run `daily-proxy.js`, keep the frontend and proxy reachable over HTTPS, and set the proxy URL in **SETUP**.
+Run the static frontend in one terminal and the proxy in another:
 
-The Node.js proxy and PHP proxy are alternatives. Choose one; the application does not require both.
+```powershell
+py -m http.server 8000
+node .\daily-proxy.js
+```
 
-## Community Support
+The Node.js proxy listens on `http://localhost:8010` by default. Use that address in **SETUP** with the `auto` or `proxy` route.
 
-Community support is welcome. For questions, bug reports, and feature requests, open an [Issue](https://github.com/nazetechnology/Daily-Reader/issues). Include your browser, operating system, setup method, and the relevant error message. Never include your API token.
+PHP and Node.js are alternative proxy options. You do not need to run both.
 
-If The Daily Reader is useful to you, please [star the repository](https://github.com/nazetechnology/Daily-Reader). A star helps other users discover the project and supports future improvements.
+## Deployment
 
-## Contributing
+### Shared hosting
 
-Contributors are welcome. You can help with bug reports, documentation, feature ideas, testing, or code.
+Upload `index.html`, `proxy.php`, and `.htaccess` to the web root of a PHP host with cURL enabled. Keep the frontend and proxy on the same HTTPS domain when possible.
 
-1. Fork the repository.
-2. Create a focused feature or fix branch.
-3. Make your changes without adding secrets.
-4. Test the reader in a browser.
-5. Run `node --check .\daily-proxy.js` when changing the Node proxy.
-6. Open a pull request with a clear description and testing notes.
+### VPS or Node host
 
-Please keep contributions focused and preserve the simple, dependency-free setup where possible.
+Serve `index.html` with any static web server and keep `daily-proxy.js` running as a small Node.js service. Set the public proxy URL in **SETUP** and use HTTPS in production.
+
+## Privacy and Security
+
+- Each user supplies their own daily.dev token.
+- Read state, saved posts, and configuration are kept in that browser's local storage.
+- The included proxies forward requests and do not intentionally persist tokens or API responses.
+- Never put a token in an issue, screenshot, URL, source file, or public post.
+- Revoke the token or clear browser storage when using a shared computer.
+
+For the strongest privacy boundary, run the reader and proxy on infrastructure you control.
 
 ## Project Files
 
-- `index.html` - the frontend application.
-- `proxy.php` - the optional PHP API proxy.
-- `.htaccess` - HTTPS, proxy routing, and basic web-server rules.
-- `daily-proxy.js` - the optional Node.js API proxy.
-- `LICENSE` - the MIT license.
+- [index.html](index.html) - the complete frontend application.
+- [proxy.php](proxy.php) - optional PHP daily.dev API proxy.
+- [daily-proxy.js](daily-proxy.js) - optional Node.js daily.dev API proxy.
+- [.htaccess](.htaccess) - Apache routing and security rules.
+- [assets/daily-reader-tour.gif](assets/daily-reader-tour.gif) - README feature tour.
+- [LICENSE](LICENSE) - MIT license.
+
+## Contributing
+
+1. Fork the repository.
+2. Create a focused feature or fix branch.
+3. Do not add tokens or other secrets.
+4. Test the reader in a browser.
+5. Run `node --check .\daily-proxy.js` when changing the Node.js proxy.
+6. Open a pull request with clear testing notes.
+
+Questions and bug reports belong in the repository's issue tracker. Please include your browser, operating system, setup route, and the relevant error message, but never include your API token.
 
 ## License
 
