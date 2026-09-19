@@ -64,10 +64,13 @@
   .search,.tagwrap{display:flex;align-items:center;gap:8px;border:1px solid var(--line);padding:7px 10px;transition:border-color .15s}
   .search:focus-within,.tagwrap:focus-within{border-color:var(--ink)}
   .search svg{width:14px;height:14px;color:var(--ink-40);flex:none}
-  .search input{border:none;background:none;outline:none;font:12px 'Spline Sans Mono',monospace;width:170px;color:var(--ink)}
+  .search input{border:none;background:none;outline:none;font:12px 'Spline Sans Mono',monospace;width:190px;max-width:32vw;color:var(--ink)}
   .tagwrap span{color:var(--accent-ink);font-family:'Spline Sans Mono',monospace;font-size:12px}
   .tagwrap input{border:none;background:none;outline:none;font:12px 'Spline Sans Mono',monospace;width:80px;color:var(--ink)}
   .search input::placeholder,.tagwrap input::placeholder{color:var(--ink-40)}
+  .searchmode{height:31px;border:1px solid var(--line);background:transparent;color:var(--ink);
+    font:12px 'Spline Sans Mono',monospace;padding:0 8px;cursor:pointer}
+  .searchmode:focus,.searchmode:hover{border-color:var(--ink);outline:none}
   .profile-card{max-width:1080px;margin:0 auto;padding:18px 28px 4px}
   .profile-card-in{display:flex;align-items:center;gap:16px;border:1px solid var(--line-strong);background:var(--paper-2);padding:15px 16px;box-shadow:5px 5px 0 rgba(28,26,21,.1)}
   .profile-card img,.profile-avatar{width:58px;height:58px;border-radius:50%;object-fit:cover;background:var(--accent);border:1px solid var(--line);flex:none}
@@ -241,6 +244,13 @@
     <div class="bar-right">
       <label class="tagwrap" title="Server-side tag filter — type and press Enter"><span>#</span><input id="tagq" placeholder="tag" spellcheck="false"/></label>
       <label class="search"><i data-lucide="search"></i><input id="q" placeholder="filter the wire…" spellcheck="false"/></label>
+      <select id="searchMode" class="searchmode" title="Search mode">
+        <option value="keyword">keyword</option>
+        <option value="semantic">semantic</option>
+        <option value="local">local</option>
+      </select>
+      <button class="iconbtn" id="btnSearch" title="Run search"><i data-lucide="search"></i></button>
+      <button class="iconbtn" id="btnClearSearch" title="Clear search"><i data-lucide="x"></i></button>
       <button class="iconbtn" id="btnMd" title="Copy visible list as Markdown"><i data-lucide="clipboard-copy"></i></button>
       <button class="iconbtn" id="btnRefresh" title="Refetch"><i data-lucide="refresh-cw"></i></button>
     </div>
@@ -421,7 +431,7 @@ http.createServer((req, res) => {
       <span><kbd>S</kbd></span><span>save / unsave for later</span>
       <span><kbd>M</kbd></span><span>mark read / unread</span>
       <span><kbd>C</kbd></span><span>copy the link</span>
-      <span><kbd>/</kbd></span><span>jump to the filter box</span>
+      <span><kbd>/</kbd></span><span>jump to search</span>
       <span><kbd>?</kbd></span><span>this panel</span>
       <span><kbd>Esc</kbd></span><span>close panels</span>
     </div>
@@ -464,7 +474,7 @@ function relTime(iso){
 }
 
 /* ============ config / state ============ */
-const K = {key:'ddr_key', proxy:'ddr_proxy', route:'ddr_route', psize:'ddr_psize', base:'ddr_base', read:'ddr_read', saved:'ddr_saved'};
+const K = {key:'ddr_key', proxy:'ddr_proxy', route:'ddr_route', psize:'ddr_psize', base:'ddr_base', read:'ddr_read', saved:'ddr_saved', smode:'ddr_search_mode'};
 const hostedOnGitHubPages = /(^|\.)github\.io$/i.test(location.hostname);
 const localDevelopment = /^(localhost|127\.0\.0\.1)$/i.test(location.hostname);
 const defaultProxy = hostedOnGitHubPages ? '' : localDevelopment ? 'http://localhost:8010' : '/proxy.php';
@@ -480,7 +490,12 @@ const state = {
   read:  new Set(JSON.parse(localStorage.getItem(K.read)  || '[]')),
   saved: new Map(JSON.parse(localStorage.getItem(K.saved) || '[]')),
   cursor: null, hasNext: true, loading: false,
-  filter: 'all', search: '', tag: '', selId: null, renderedOnce: false,
+  filter: 'all',
+  search: '',
+  searchMode: localStorage.getItem(K.smode) || 'keyword',
+  tag: '',
+  selId: null,
+  renderedOnce: false,
 };
 const persistRead  = () => localStorage.setItem(K.read,  JSON.stringify([...state.read].slice(-2000)));
 const persistSaved = () => localStorage.setItem(K.saved, JSON.stringify([...state.saved.entries()].slice(-400)));
@@ -490,8 +505,29 @@ const list = $('#list'), peek = $('#peek'), peekImg = peek.querySelector('img'),
       peekCap = peek.querySelector('figcaption'), progress = $('#progress'),
       btnMore = $('#btnMore'), endwire = $('#endwire'), qInput = $('#q'),
   tagInput = $('#tagq'), btnProfile = $('#btnProfile'), profileResult = $('#profileResult'),
+  modeInput = $('#searchMode'), btnSearch = $('#btnSearch'), btnClearSearch = $('#btnClearSearch'),
   btnRefresh = $('#btnRefresh');
 const icons = () => { if(window.lucide) lucide.createIcons(); };
+
+function searchText(){
+  return state.search.trim();
+}
+function isRemoteSearch(){
+  return !!searchText() && (state.searchMode === 'keyword' || state.searchMode === 'semantic');
+}
+function searchLimit(){
+  return Math.max(1, Math.min(20, state.pageSize));
+}
+function updateSearchUI(){
+  if(!['keyword', 'semantic', 'local'].includes(state.searchMode)) state.searchMode = 'keyword';
+  modeInput.value = state.searchMode;
+  qInput.placeholder = state.searchMode === 'semantic'
+    ? 'ask daily.dev'
+    : state.searchMode === 'local'
+      ? 'filter loaded posts'
+      : 'keyword search';
+  btnClearSearch.hidden = !state.search.trim();
+}
 
 let typeTimer = null;
 function setWire(text, mode = 'idle'){
@@ -654,11 +690,17 @@ async function loadCurrentProfile(){
   progress.classList.add('busy'); btnRefresh.classList.add('spin');
   btnMore.disabled = true; btnMore.textContent = reset ? 'PULLING THE WIRE…' : 'PULLING THE NEXT PAGE…';
 
-  const params = { limit: state.pageSize };
-  if(state.cursor) params.cursor = state.cursor;
-  const endpoint = state.tag
-    ? '/feeds/tag/' + encodeURIComponent(state.tag)
-    : '/feeds/foryou';
+  const remoteSearch = isRemoteSearch();
+  const query = searchText();
+  const endpoint = remoteSearch
+    ? '/recommend/' + state.searchMode
+    : state.tag
+      ? '/feeds/tag/' + encodeURIComponent(state.tag)
+      : '/feeds/foryou';
+  const params = remoteSearch
+    ? { q: query, limit: searchLimit() }
+    : { limit: state.pageSize };
+  if(state.cursor && (!remoteSearch || state.searchMode === 'keyword')) params.cursor = state.cursor;
   const t0 = performance.now();
 
   try{
@@ -667,7 +709,7 @@ async function loadCurrentProfile(){
     const raw = Array.isArray(json.data) ? json.data : (findPostsArray(json) || []);
     const nodes = raw.map(normalizePost).filter(p => p.permalink || p.id);
 
-    if(!raw.length && reset){
+    if(!raw.length && reset && !remoteSearch){
       diag('GET ' + state.base + endpoint + ' — JSON came back but no posts found.\nRaw:\n' + JSON.stringify(json).slice(0, 1400));
       toast('No posts returned — see SETUP diagnostics', 'err');
       setWire('unexpected response shape — see SETUP', 'err');
@@ -678,10 +720,15 @@ async function loadCurrentProfile(){
         state.posts = state.posts.concat(nodes.filter(p => !seen.has(p.id)));
       }
       const pagination = json.pagination || {};
-      state.hasNext = pagination.hasNextPage === true;
-      state.cursor = pagination.cursor || null;
+      state.hasNext = remoteSearch && state.searchMode === 'semantic' ? false : pagination.hasNextPage === true;
+      state.cursor = state.hasNext ? (pagination.cursor || null) : null;
       if(!state.cursor) state.hasNext = false;
 
+      if(remoteSearch){
+        setWire(state.posts.length + ' posts on the desk - ' + ms + 'ms - ' +
+          state.searchMode + ': ' + query + (state.hasNext ? '' : ' - end of the wire'), 'ok');
+      }
+      if(!remoteSearch)
       setWire(state.posts.length + ' posts on the desk · ' + ms + 'ms' +
         (state.tag ? ' · #' + state.tag : '') + (state.hasNext ? '' : ' · end of the wire'), 'ok');
       diag('GET ' + endpoint + ' ' + JSON.stringify(params) + ' — HTTP ok, ' + nodes.length +
@@ -760,6 +807,7 @@ function normalizePost(r){
   return {
     id: postId,
     title: deepText(r, ['title', 'titleText', 'headline', 'name']) || 'Untitled',
+    summary: deepText(r, ['summary', 'description', 'content', 'excerpt']),
     image: value('image') || value('coverImage'),
     permalink,
     publishedAt: value('publishedAt') || value('createdAt'),
@@ -779,7 +827,7 @@ function visiblePosts(){
   else l = state.posts.slice();
   if(state.filter === 'unread') l = l.filter(p => !state.read.has(p.id));
   const s = state.search.trim().toLowerCase();
-  if(s) l = l.filter(p => ((p.title||'') + ' ' + ((p.source && p.source.name)||'') + ' ' + (p.tags||[]).join(' ')).toLowerCase().includes(s));
+  if(s && state.searchMode === 'local') l = l.filter(p => ((p.title||'') + ' ' + (p.summary||'') + ' ' + ((p.source && p.source.name)||'') + ' ' + (p.tags||[]).join(' ')).toLowerCase().includes(s));
   return l;
 }
 function updateCounts(){
@@ -789,6 +837,7 @@ function updateCounts(){
 }
 function emptyHTML(){
   const s = state.search.trim();
+  if(s && isRemoteSearch()) return `<div class="empty mono">NO ${esc(state.searchMode.toUpperCase())} RESULTS FOR &quot;${esc(s)}&quot;<br>TRY A DIFFERENT QUERY</div>`;
   if(s) return `<div class="empty mono">NO MATCHES FOR “${esc(s)}”<br>TRY A SHORTER FILTER</div>`;
   if(state.filter === 'saved')  return `<div class="empty mono">NOTHING ON THE SHELF YET<br>PRESS <b>S</b> ON ANY POST TO KEEP IT HERE</div>`;
   if(state.filter === 'unread') return `<div class="empty mono">ALL CAUGHT UP<br>EVERY POST ON THE DESK HAS BEEN READ</div>`;
@@ -830,9 +879,10 @@ function render(){
   }
   if(state.selId && !vis.some(p => p.id === state.selId)) state.selId = null;
   paintSel();
-  const feedMode = state.filter === 'all' && !state.search.trim();
-  btnMore.hidden = !(feedMode && state.hasNext);
-  endwire.hidden = !(feedMode && !state.hasNext && state.posts.length);
+  const localFiltering = state.searchMode === 'local' && state.search.trim();
+  const pageableMode = state.filter === 'all' && !localFiltering && (!isRemoteSearch() || state.searchMode === 'keyword');
+  btnMore.hidden = !(pageableMode && state.hasNext);
+  endwire.hidden = !(pageableMode && !state.hasNext && state.posts.length);
   icons();
 }
 function paintSel(){
@@ -879,9 +929,50 @@ list.addEventListener('click', e => {
   const b = e.target.closest('button'); if(!b) return;
   state.filter = b.dataset.filter; state.selId = null; render();
 });
-qInput.addEventListener('input', () => { state.search = qInput.value; state.selId = null; render(); });
+function runSearch(){
+  state.search = qInput.value.trim();
+  qInput.value = state.search;
+  state.selId = null;
+  updateSearchUI();
+  if(state.searchMode === 'local') render();
+  else fetchPage(true);
+}
+qInput.addEventListener('input', () => {
+  state.search = qInput.value;
+  state.selId = null;
+  updateSearchUI();
+  if(state.searchMode === 'local') render();
+});
+qInput.addEventListener('keydown', e => {
+  if(e.key !== 'Enter') return;
+  e.preventDefault();
+  runSearch();
+});
+modeInput.addEventListener('change', () => {
+  state.searchMode = modeInput.value;
+  localStorage.setItem(K.smode, state.searchMode);
+  state.selId = null;
+  updateSearchUI();
+  if(state.search.trim() && state.searchMode !== 'local') fetchPage(true);
+  else render();
+});
+btnSearch.addEventListener('click', runSearch);
+btnClearSearch.addEventListener('click', () => {
+  const wasRemote = isRemoteSearch();
+  state.search = '';
+  qInput.value = '';
+  state.selId = null;
+  updateSearchUI();
+  if(wasRemote) fetchPage(true);
+  else render();
+});
 tagInput.addEventListener('keydown', e => {
   if(e.key !== 'Enter') return;
+  if(state.searchMode !== 'local'){
+    state.search = '';
+    qInput.value = '';
+    updateSearchUI();
+  }
   state.tag = tagInput.value.trim().replace(/^#/, '').toLowerCase();
   fetchPage(true);
 });
@@ -1046,6 +1137,7 @@ peekImg.addEventListener('error', hidePeek);
     n.toLocaleDateString(undefined, {weekday:'long', month:'long', day:'numeric', year:'numeric'}).toUpperCase() +
     ' · ' + n.toLocaleTimeString(undefined, {hour:'2-digit', minute:'2-digit'});
 })();
+updateSearchUI();
 render();
 setWire(state.key ? 'standby — the wire is yours' : 'no key on file', 'idle');
 if(state.key){ $('#gate').hidden = true; fetchPage(true); } else openGate();

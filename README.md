@@ -29,7 +29,7 @@ It runs as a plain static web app with no build step and no frontend package ins
 ## Features
 
 - Focused feed with cursor-based pagination and a **LOAD MORE POSTS** workflow.
-- Fast filters for all posts, unread posts, saved posts, tags, and free-text search.
+- Fast filters for all posts, unread posts, saved posts, tags, local text filtering, keyword search, and semantic search.
 - Local read history and saved posts stored in the browser, not in a hosted database.
 - Profile lookup, article previews, direct article links, and hover image peek.
 - One-click Markdown export for the currently visible list.
@@ -49,6 +49,16 @@ It runs as a plain static web app with no build step and no frontend package ins
 2. Enter your own daily.dev token in **SETUP**.
 3. Choose the direct route, or configure `/proxy.php` or `http://localhost:8010`.
 4. Select **OPEN THE WIRE** and start reading.
+
+## Search
+
+The search box supports three modes:
+
+- `keyword` calls `GET /recommend/keyword?q=...` and is best for exact technical terms such as `RAG`, `pgvector`, or `LangChain`.
+- `semantic` calls `GET /recommend/semantic?q=...` for natural-language questions. The daily.dev docs mark this endpoint as deprecated, so keyword remains the default.
+- `local` filters the posts already loaded in the browser by title, summary, source, and tags.
+
+Press `Enter` in the search box or use the search button to run keyword or semantic search. Keyword results support cursor pagination when daily.dev returns a cursor.
 
 The token is entered in your browser and is not committed to this repository, URL, or README.
 
@@ -87,7 +97,7 @@ PHP and Node.js are alternative proxy options. You do not need to run both.
 
 ### Shared hosting
 
-Upload `index.html`, `proxy.php`, and `.htaccess` to the web root of a PHP host with cURL enabled. Keep the frontend and proxy on the same HTTPS domain when possible.
+Upload `index.html` and `proxy.php` to the web root of a PHP host with cURL enabled. Keep the frontend and proxy on the same HTTPS domain when possible.
 
 ### VPS or Node host
 
@@ -108,7 +118,6 @@ For the strongest privacy boundary, run the reader and proxy on infrastructure y
 - [index.html](index.html) - the complete frontend application.
 - [proxy.php](proxy.php) - optional PHP daily.dev API proxy.
 - [daily-proxy.js](daily-proxy.js) - optional Node.js daily.dev API proxy.
-- [.htaccess](.htaccess) - Apache routing and security rules.
 - [assets/daily-reader-tour.gif](assets/daily-reader-tour.gif) - README feature tour.
 - [LICENSE](LICENSE) - MIT license.
 
@@ -119,7 +128,8 @@ For the strongest privacy boundary, run the reader and proxy on infrastructure y
 3. Do not add tokens or other secrets.
 4. Test the reader in a browser.
 5. Run `node --check .\daily-proxy.js` when changing the Node.js proxy.
-6. Open a pull request with clear testing notes.
+6. Run `php -l .\proxy.php` when changing the PHP proxy.
+7. Open a pull request with clear testing notes.
 
 Questions and bug reports belong in the repository's issue tracker. Please include your browser, operating system, setup route, and the relevant error message, but never include your API token.
 

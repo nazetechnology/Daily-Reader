@@ -12,6 +12,7 @@ const KEY = process.env.DAILY_KEY || '';
 
 const DAILY_HOST = 'api.daily.dev';
 const DAILY_BASE = '/public/v1';
+const SEARCH_TIMES = new Set(['day', 'week', 'month', 'year', 'all']);
 
 
 // ---------------------------------------------------------
@@ -70,6 +71,55 @@ function buildAuthorizationHeader(req) {
 }
 
 
+function clampNumber(value, fallback, min, max) {
+  const n = Number(value);
+
+  if (!Number.isFinite(n)) {
+    return fallback;
+  }
+
+  return Math.max(min, Math.min(max, Math.trunc(n)));
+}
+
+
+function buildSearchPath(params) {
+  const q = String(
+    params.get('q') ||
+    params.get('query') ||
+    params.get('search') ||
+    ''
+  ).trim();
+
+  if (!q) {
+    return '';
+  }
+
+  const mode =
+    params.get('mode') === 'semantic'
+      ? 'semantic'
+      : 'keyword';
+
+  const outgoing = new URLSearchParams();
+  outgoing.set('q', q);
+  outgoing.set(
+    'limit',
+    String(clampNumber(params.get('limit') || params.get('pageSize'), 10, 1, 20))
+  );
+
+  const time = params.get('time');
+  if (SEARCH_TIMES.has(time)) {
+    outgoing.set('time', time);
+  }
+
+  const cursor = params.get('cursor');
+  if (mode === 'keyword' && cursor) {
+    outgoing.set('cursor', cursor);
+  }
+
+  return `/recommend/${mode}?${outgoing.toString()}`;
+}
+
+
 // ---------------------------------------------------------
 // Convert your OLD frontend request to the NEW daily.dev API
 //
@@ -90,6 +140,10 @@ function translateRequest(req) {
 
   const params = incoming.searchParams;
 
+  if (pathname === '/search' || pathname === '/search/') {
+    return buildSearchPath(params) || '/recommend/keyword' + (incoming.search || '');
+  }
+
   // -------------------------------------------------------
   // Existing frontend calls:
   //
@@ -101,6 +155,11 @@ function translateRequest(req) {
   // -------------------------------------------------------
 
   if (pathname === '/posts' || pathname === '/posts/') {
+    const searchPath = buildSearchPath(params);
+
+    if (searchPath) {
+      return searchPath;
+    }
 
     const pageSize = Number(params.get('pageSize')) || 20;
 
@@ -176,30 +235,35 @@ function translateRequest(req) {
 // ---------------------------------------------------------
 
 function transformResponse(path, json) {
+  const listEndpoint =
+    path.startsWith('/feeds/') ||
+    path.startsWith('/recommend/');
 
-  // Compatibility response for feed endpoints
+  // Compatibility response for feed and recommendation list endpoints
   if (
+    listEndpoint &&
     json &&
     Array.isArray(json.data) &&
-    json.pagination
+    (json.pagination || path.startsWith('/recommend/'))
   ) {
+    const pagination = json.pagination || {};
 
     return {
       posts: json.data,
 
       paginationInfo: {
         hasNext:
-          json.pagination.hasNextPage === true,
+          pagination.hasNextPage === true,
 
         cursor:
-          json.pagination.cursor || null
+          pagination.cursor || null
       },
 
       // Keep original response too.
       // Useful for debugging / future frontend updates.
       data: json.data,
 
-      pagination: json.pagination
+      pagination
     };
   }
 
