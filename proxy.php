@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 const DAILY_HOST = 'api.daily.dev';
 const DAILY_BASE = '/public/v1';
+const SEARCH_TIMES = ['day' => true, 'week' => true, 'month' => true, 'year' => true, 'all' => true];
 
 function send_json(int $status, $data): never
 {
@@ -32,10 +33,57 @@ function request_path(): string
     return $path === '' ? '/' : $path;
 }
 
+function bounded_int($value, int $fallback, int $min, int $max): int
+{
+    $n = filter_var($value, FILTER_VALIDATE_INT);
+    if ($n === false || $n === null) {
+        return $fallback;
+    }
+
+    return max($min, min($max, (int) $n));
+}
+
+function build_search_path(): string
+{
+    $query = trim((string) ($_GET['q'] ?? $_GET['query'] ?? $_GET['search'] ?? ''));
+    if ($query === '') {
+        return '';
+    }
+
+    $mode = ($_GET['mode'] ?? '') === 'semantic' ? 'semantic' : 'keyword';
+    $params = [
+        'q' => $query,
+        'limit' => (string) bounded_int($_GET['limit'] ?? $_GET['pageSize'] ?? null, 10, 1, 20),
+    ];
+
+    $time = (string) ($_GET['time'] ?? '');
+    if (isset(SEARCH_TIMES[$time])) {
+        $params['time'] = $time;
+    }
+
+    $cursor = trim((string) ($_GET['cursor'] ?? ''));
+    if ($mode === 'keyword' && $cursor !== '') {
+        $params['cursor'] = $cursor;
+    }
+
+    return '/recommend/' . $mode . '?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986);
+}
+
 function translate_path(string $path): string
 {
+    if ($path === '/search' || $path === '/search/') {
+        $search_path = build_search_path();
+        $query_string = (string) ($_SERVER['QUERY_STRING'] ?? '');
+        return $search_path !== '' ? $search_path : '/recommend/keyword' . ($query_string !== '' ? '?' . $query_string : '');
+    }
+
     if ($path !== '/posts' && $path !== '/posts/') {
         return $path;
+    }
+
+    $search_path = build_search_path();
+    if ($search_path !== '') {
+        return $search_path;
     }
 
     $page_size = filter_input(INPUT_GET, 'pageSize', FILTER_VALIDATE_INT);
@@ -64,17 +112,21 @@ function api_token(): string
     return request_header('api-key');
 }
 
-function transform_response($json)
+function transform_response($json, string $path)
 {
-    if (is_array($json) && isset($json['data']) && is_array($json['data']) && isset($json['pagination'])) {
+    $list_endpoint = str_starts_with($path, '/feeds/') || str_starts_with($path, '/recommend/');
+
+    if ($list_endpoint && is_array($json) && isset($json['data']) && is_array($json['data']) && (isset($json['pagination']) || str_starts_with($path, '/recommend/'))) {
+        $pagination = is_array($json['pagination'] ?? null) ? $json['pagination'] : [];
+
         return [
             'posts' => $json['data'],
             'paginationInfo' => [
-                'hasNext' => ($json['pagination']['hasNextPage'] ?? false) === true,
-                'cursor' => $json['pagination']['cursor'] ?? null,
+                'hasNext' => ($pagination['hasNextPage'] ?? false) === true,
+                'cursor' => $pagination['cursor'] ?? null,
             ],
             'data' => $json['data'],
-            'pagination' => $json['pagination'],
+            'pagination' => $pagination,
         ];
     }
 
@@ -142,4 +194,4 @@ if (json_last_error() !== JSON_ERROR_NONE) {
     ]);
 }
 
-send_json($status ?: 502, ($status >= 200 && $status < 300) ? transform_response($json) : $json);
+send_json($status ?: 502, ($status >= 200 && $status < 300) ? transform_response($json, $target_path) : $json);
